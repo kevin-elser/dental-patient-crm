@@ -100,10 +100,12 @@ Key functionalities that I plan to implement include:
 Below is my planned roadmap with milestones:
 
 ### Milestone 1: Project Setup & Architecture
-- [ ] Initialize the Next.js project with TypeScript.
-- [ ] Configure Tailwind CSS.
-- [ ] Integrate shadcn components.
-- [ ] Set up Prisma with a local MySQL database reflecting the OpenDental schema.
+- [x] Initialize the Next.js project with TypeScript.
+- [x] Configure Tailwind CSS color palette.
+- [x] Integrate shadcn components.
+- [x] Set up Prisma with a local MySQL database
+- [x] Generate dummy data from legitimate opendental database
+- [ ] Edit database as needed for localized restore and prisma generation
 
 ### Milestone 2: Core Layout & Navigation
 - [ ] Develop the main layout with a sidebar navigation system.

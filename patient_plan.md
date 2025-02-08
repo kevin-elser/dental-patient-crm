@@ -134,8 +134,3 @@ Below is my planned roadmap with milestones:
 
 - **Documentation**: I will maintain comprehensive code and user documentation.
 - **Code Reviews & Collaboration**: I plan to use Git for version control and implement regular code reviews to ensure high-quality code.
-- **Monitoring & Error Tracking**: I will set up tools such as Sentry for real-time error tracking and performance monitoring.
-
----
-
-This is my development plan for the Patient CRM project. If there are any changes or additional details needed, I am open to discussing them.

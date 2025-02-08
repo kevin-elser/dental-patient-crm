@@ -116,16 +116,24 @@ Below is my planned roadmap with milestones:
 - [ ] Create the patient table view with filtering and sublist capabilities.
 - [ ] Implement an expandable patient detail sidebar.
 
-### Milestone 4: Campaigns Module
+### Milestone 4: Campaigns Module and Messaging
 - [ ] Integrate SMS and email APIs.
+- [ ] Leverage SMS to create the messaging interface and components.
 - [ ] Develop templating functionality for bulk messaging.
 - [ ] Build the basic analytics dashboard.
 
-### Milestone 5: Calendar Module
+### Milestone 5: Calling Module
+- [ ] Integrate a calling API.
+- [ ] Add a calling interface and components.
+- [ ] Add analytics for calls like recent calls, missed calls, call history, etc.
+
+### Milestone 6: Calendar Module
 - [ ] Design and implement a 24-hour day-view calendar.
 - [ ] Integrate event data fetching and interactivity.
 
-### Milestone 6: Testing & Deployment
+### Milestone 7: Testing & Deployment
+
+
 - [ ] Write unit and integration tests (using Jest or a similar framework).
 - [ ] Conduct end-to-end testing for key user flows.
 

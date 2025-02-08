@@ -11,14 +11,16 @@ export default {
   	extend: {
   		colors: {
   			primary: {
-  				'50': '#f2fdfd',
-  				'100': '#cefafa',
-  				'200': '#87f4f6',
-  				'300': '#60e8ea',
-  				'400': '#2ed2d4',
-  				'500': '#41b1b2',
-  				'600': '#0d9394',
-  				'700': '#107879',
+          "100": "#d2faef",
+          "200": "#84f7dc",
+          "300": "#5eebcd",
+          "400": "#2dd5b6",
+          "500": "#3fb39b",
+          "600": "#0c957e",
+          "700": "#0f7a67",
+          "800": "#136959",
+          "900": "#175c4f",
+          "950": "#195347",
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
   			},
@@ -57,6 +59,16 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			sidebar: {
+  				DEFAULT: 'hsl(var(--sidebar-background))',
+  				foreground: 'hsl(var(--sidebar-foreground))',
+  				primary: 'hsl(var(--sidebar-primary))',
+  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+  				accent: 'hsl(var(--sidebar-accent))',
+  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+  				border: 'hsl(var(--sidebar-border))',
+  				ring: 'hsl(var(--sidebar-ring))'
   			}
   		},
   		borderRadius: {

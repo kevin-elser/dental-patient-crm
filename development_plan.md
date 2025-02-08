@@ -101,15 +101,16 @@ Below is my planned roadmap with milestones:
 
 ### Milestone 1: Project Setup & Architecture
 - [x] Initialize the Next.js project with TypeScript.
-- [x] Configure Tailwind CSS color palette.
+- [x] Configure Tailwind CSS color palette. `Palette tuned in inclusivecolors.com: https://www.naturl.link/color`
 - [x] Integrate shadcn components.
 - [x] Set up Prisma with a local MySQL database
 - [x] Generate dummy data from legitimate opendental database using a script + Faker
+
 - [x] Edit database as needed for localized restore and prisma generation
 
 ### Milestone 2: Core Layout & Navigation
-- [ ] Develop the main layout with a sidebar navigation system.
-- [ ] Implement dynamic routing for sub-app modules.
+- [x] Develop the main layout with a sidebar navigation system.
+- [x] Implement dynamic routing for sub-app modules.
 
 ### Milestone 3: Patient Management Module
 - [ ] Create the patient table view with filtering and sublist capabilities.

@@ -104,7 +104,7 @@ Below is my planned roadmap with milestones:
 - [x] Configure Tailwind CSS color palette.
 - [x] Integrate shadcn components.
 - [x] Set up Prisma with a local MySQL database
-- [x] Generate dummy data from legitimate opendental database
+- [x] Generate dummy data from legitimate opendental database using a script + Faker
 - [ ] Edit database as needed for localized restore and prisma generation
 
 ### Milestone 2: Core Layout & Navigation
@@ -127,10 +127,8 @@ Below is my planned roadmap with milestones:
 ### Milestone 6: Testing & Deployment
 - [ ] Write unit and integration tests (using Jest or a similar framework).
 - [ ] Conduct end-to-end testing for key user flows.
-- [ ] Set up a CI/CD pipeline (e.g., using GitHub Actions).
-- [ ] Deploy the application on Vercel (or another preferred platform).
 
 ## 6. Additional Considerations
 
 - **Documentation**: I will maintain comprehensive code and user documentation.
-- **Code Reviews & Collaboration**: I plan to use Git for version control and implement regular code reviews to ensure high-quality code.
+- **Code Reviews & Collaboration**: I plan to use Git for version control.

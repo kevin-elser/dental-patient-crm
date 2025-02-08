@@ -105,7 +105,7 @@ Below is my planned roadmap with milestones:
 - [x] Integrate shadcn components.
 - [x] Set up Prisma with a local MySQL database
 - [x] Generate dummy data from legitimate opendental database using a script + Faker
-- [ ] Edit database as needed for localized restore and prisma generation
+- [x] Edit database as needed for localized restore and prisma generation
 
 ### Milestone 2: Core Layout & Navigation
 - [ ] Develop the main layout with a sidebar navigation system.

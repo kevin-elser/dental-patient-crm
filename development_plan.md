@@ -105,12 +105,12 @@ Below is my planned roadmap with milestones:
 - [x] Integrate shadcn components.
 - [x] Set up Prisma with a local MySQL database
 - [x] Generate dummy data from legitimate opendental database using a script + Faker
-
 - [x] Edit database as needed for localized restore and prisma generation
 
 ### Milestone 2: Core Layout & Navigation
 - [x] Develop the main layout with a sidebar navigation system.
 - [x] Implement dynamic routing for sub-app modules.
+- [ ] Create loading animations while data is loading.
 
 ### Milestone 3: Patient Management Module
 - [ ] Create the patient table view with filtering and sublist capabilities.
@@ -132,8 +132,6 @@ Below is my planned roadmap with milestones:
 - [ ] Integrate event data fetching and interactivity.
 
 ### Milestone 7: Testing & Deployment
-
-
 - [ ] Write unit and integration tests (using Jest or a similar framework).
 - [ ] Conduct end-to-end testing for key user flows.
 

@@ -528,14 +528,14 @@ const sidebarMenuButtonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-foreground/70 hover:bg-background hover:text-primary-600 data-[active=true]:bg-background data-[active=true]:text-primary-600 data-[state=open]:hover:bg-background data-[state=open]:hover:text-primary-600",
+          "hover:bg-background hover:text-primary-600 data-[active=true]:bg-background data-[active=true]:text-primary-600 data-[state=open]:hover:bg-background data-[state=open]:hover:text-primary-600",
         outline:
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
-        submenu: "text-foreground/70 hover:bg-accent/50 data-[active=true]:bg-accent/50 data-[active=true]:text-accent-foreground",
+        submenu: " hover:bg-accent/50 data-[active=true]:bg-accent/50 data-[active=true]:text-accent-foreground",
       },
       size: {
         default:
-          "flex-col min-h-[4.5rem] w-full gap-2 p-2 text-center justify-center [&>span:last-child]:text-xs [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-foreground/70",
+          "flex-col min-h-[4.5rem] w-full gap-2 p-2 text-center justify-center [&>span:last-child]:text-xs [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:",
         sm: "min-h-[4rem] text-xs",
         lg: "min-h-[5rem] text-sm group-data-[collapsible=icon]:!p-0",
         submenu:
@@ -767,7 +767,7 @@ const SidebarMenuSubButton = React.forwardRef<
       data-size={size}
       data-active={isActive}
       className={cn(
-        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-foreground/70 outline-none ring-sidebar-ring hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-accent-foreground",
+        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2  outline-none ring-sidebar-ring hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-accent-foreground",
         "data-[active=true]:bg-accent data-[active=true]:text-accent-foreground",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
@@ -783,9 +783,18 @@ SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 // New Component: SidebarSubmenu renders the active submenu as a normal flex column.
 const SidebarSubmenu = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
+  React.ComponentProps<"div"> & {
+    submenuItemCount?: number
+  }
+>(({ className, submenuItemCount = 1, ...props }, ref) => {
   const { activeSubmenu, submenuTitle } = useSidebar()
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <div
       ref={ref}
@@ -794,14 +803,29 @@ const SidebarSubmenu = React.forwardRef<
       style={{ borderColor: 'hsl(var(--border))' }}
       {...props}
     >
-      {submenuTitle && (
-        <div className="p-4 text-lg text-foreground/80 font-semibold ml-[5%]">
-          {submenuTitle}
-        </div>
+      {isLoading ? (
+        <>
+          <div className="p-4 ml-[5%]">
+            <Skeleton className="h-7 w-24" />
+          </div>
+          <div className="flex flex-col gap-1">
+            {[...Array(submenuItemCount)].map((_, i) => (
+              <Skeleton key={i} className="h-8 w-[90%] mx-auto rounded-xl" />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {submenuTitle && (
+            <div className="p-4 text-lg text-sidebar-foreground font-semibold ml-[5%]">
+              {submenuTitle}
+            </div>
+          )}
+          <div className="flex flex-col gap-1">
+            {activeSubmenu}
+          </div>
+        </>
       )}
-      <div className="flex flex-col gap-1">
-        {activeSubmenu}
-      </div>
     </div>
   )
 })

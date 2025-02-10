@@ -3,27 +3,23 @@ import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const cursor = searchParams.get('cursor')
+  const page = parseInt(searchParams.get('page') || '0')
   const search = searchParams.get('search') || ''
 
   try {
     const patients = await prisma.patient.findMany({
       take: 100,
-      ...(cursor
-        ? {
-            skip: 1, // Skip the cursor
-            cursor: {
-              PatNum: BigInt(cursor),
-            },
-          }
-        : {}),
+      skip: page * 100,
       where: {
         OR: [
           { LName: { contains: search } },
           { FName: { contains: search } },
         ],
       },
-      orderBy: { LName: 'asc' },
+      orderBy: [
+        { LName: 'asc' },
+        { PatNum: 'asc' }
+      ],
       select: {
         PatNum: true,
         LName: true,

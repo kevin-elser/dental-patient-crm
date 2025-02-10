@@ -114,7 +114,7 @@ Below is my planned roadmap with milestones:
 
 ### Milestone 3: Patient Management Module
 - [x] Create the patient table view with basic sorting.
-- [ ] Test with extremely large datasets (100k+ patients) to ensure performance.
+- [x] Test with extremely large datasets (100k+ patients) to ensure performance.
 - [ ] Add sublist capabilities.
 - [ ] Implement an expandable patient detail sidebar.
 

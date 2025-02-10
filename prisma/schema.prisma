@@ -2,10 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator patientColors {
-  provider = "ts-node --transpile-only ./prisma/color-generator.ts"
-}
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -2016,12 +2012,13 @@ model ehrprovkey {
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model ehrquarterlykey {
-  YearValue    Int
-  QuarterValue Int
-  PracticeName String @db.VarChar(255)
-  KeyValue     String @db.VarChar(255)
-  PatNum       BigInt
-  Notes        String @db.Text
+  EhrQuarterlyKeyNum BigInt @id @default(autoincrement())
+  YearValue          Int
+  QuarterValue       Int
+  PracticeName       String @db.VarChar(255)
+  KeyValue           String @db.VarChar(255)
+  PatNum             BigInt
+  Notes              String @db.Text
 
   @@index([PatNum], map: "PatNum")
   @@ignore
@@ -5193,4 +5190,1708 @@ model zipcode {
   City          String? @default("") @db.VarChar(100)
   State         String? @default("") @db.VarChar(20)
   IsFrequent    Boolean @default(false)
+}
+
+model deflink {
+  DefLinkNum BigInt @id @default(autoincrement())
+  DefNum     BigInt
+  FKey       BigInt
+  LinkType   Int    @db.TinyInt
+
+  @@index([DefNum], map: "DefNum")
+  @@index([FKey], map: "FKey")
+}
+
+model deletedobject {
+  DeletedObjectNum BigInt   @id @default(autoincrement())
+  ObjectNum        BigInt
+  ObjectType       Int
+  DateTStamp       DateTime @default(now()) @db.Timestamp(0)
+}
+
+model deposit {
+  DepositNum               BigInt   @id @default(autoincrement())
+  DateDeposit              DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  BankAccountInfo          String?  @db.Text
+  Amount                   Float
+  Memo                     String   @db.VarChar(255)
+  Batch                    String   @db.VarChar(25)
+  DepositAccountNum        BigInt
+  IsSentToQuickBooksOnline Int      @db.TinyInt
+
+  @@index([DepositAccountNum], map: "DepositAccountNum")
+}
+
+model dictcustom {
+  DictCustomNum BigInt @id @default(autoincrement())
+  WordText      String @db.VarChar(255)
+}
+
+model discountplan {
+  DiscountPlanNum      BigInt @id @default(autoincrement())
+  Description          String @db.VarChar(255)
+  FeeSchedNum          BigInt
+  DefNum               BigInt
+  IsHidden             Int    @db.TinyInt
+  PlanNote             String @db.Text
+  ExamFreqLimit        Int
+  XrayFreqLimit        Int
+  ProphyFreqLimit      Int
+  FluorideFreqLimit    Int
+  PerioFreqLimit       Int
+  LimitedExamFreqLimit Int
+  PAFreqLimit          Int
+  AnnualMax            Float  @default(-1)
+
+  @@index([DefNum], map: "DefNum")
+  @@index([FeeSchedNum], map: "FeeSchedNum")
+}
+
+model discountplansub {
+  DiscountSubNum  BigInt   @id @default(autoincrement())
+  DiscountPlanNum BigInt
+  PatNum          BigInt
+  DateEffective   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateTerm        DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  SubNote         String   @db.Text
+
+  @@index([DiscountPlanNum], map: "DiscountPlanNum")
+  @@index([PatNum], map: "PatNum")
+}
+
+model disease {
+  DiseaseNum        BigInt   @id @default(autoincrement())
+  PatNum            BigInt
+  DiseaseDefNum     BigInt
+  PatNote           String?  @db.Text
+  DateTStamp        DateTime @default(now()) @db.Timestamp(0)
+  ProbStatus        Int      @db.TinyInt
+  DateStart         DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateStop          DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  SnomedProblemType String   @db.VarChar(255)
+  FunctionStatus    Int      @db.TinyInt
+
+  @@index([DiseaseDefNum], map: "DiseaseDefNum")
+  @@index([PatNum], map: "indexPatNum")
+}
+
+model diseasedef {
+  DiseaseDefNum BigInt   @id @default(autoincrement())
+  DiseaseName   String?  @default("") @db.VarChar(255)
+  ItemOrder     Int      @db.UnsignedSmallInt
+  IsHidden      Int      @db.UnsignedTinyInt
+  DateTStamp    DateTime @default(now()) @db.Timestamp(0)
+  ICD9Code      String   @db.VarChar(255)
+  SnomedCode    String   @db.VarChar(255)
+  Icd10Code     String   @db.VarChar(255)
+
+  @@index([ICD9Code], map: "ICD9Code")
+  @@index([Icd10Code], map: "Icd10Code")
+  @@index([SnomedCode], map: "SnomedCode")
+}
+
+model displayfield {
+  DisplayFieldNum     BigInt  @id @default(autoincrement())
+  InternalName        String? @db.VarChar(255)
+  ItemOrder           Int
+  Description         String? @db.VarChar(255)
+  ColumnWidth         Int
+  Category            Int     @default(0)
+  ChartViewNum        BigInt
+  PickList            String  @db.Text
+  DescriptionOverride String  @db.VarChar(255)
+
+  @@index([ChartViewNum], map: "ChartViewNum")
+}
+
+model displayreport {
+  DisplayReportNum   BigInt @id @default(autoincrement())
+  InternalName       String @db.VarChar(255)
+  ItemOrder          Int
+  Description        String @db.VarChar(255)
+  Category           Int    @db.TinyInt
+  IsHidden           Int    @db.TinyInt
+  IsVisibleInSubMenu Int    @db.TinyInt
+}
+
+model dispsupply {
+  DispSupplyNum BigInt   @id @default(autoincrement())
+  SupplyNum     BigInt
+  ProvNum       BigInt
+  DateDispensed DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DispQuantity  Float    @db.Float
+  Note          String   @db.Text
+
+  @@index([ProvNum], map: "ProvNum")
+  @@index([SupplyNum], map: "SupplyNum")
+}
+
+model document {
+  DocNum           BigInt   @id @default(autoincrement())
+  Description      String?  @default("") @db.VarChar(255)
+  DateCreated      DateTime @db.DateTime(0)
+  DocCategory      BigInt
+  PatNum           BigInt
+  FileName         String?  @default("") @db.VarChar(255)
+  ImgType          Int      @default(0) @db.UnsignedTinyInt
+  IsFlipped        Boolean  @default(false)
+  DegreesRotated   Float    @db.Float
+  ToothNumbers     String?  @default("") @db.VarChar(255)
+  Note             String   @db.MediumText
+  SigIsTopaz       Int      @db.UnsignedTinyInt
+  Signature        String?  @db.Text
+  CropX            Int
+  CropY            Int
+  CropW            Int
+  CropH            Int
+  WindowingMin     Int
+  WindowingMax     Int
+  MountItemNum     BigInt
+  DateTStamp       DateTime @default(now()) @db.Timestamp(0)
+  RawBase64        String   @db.MediumText
+  Thumbnail        String   @db.Text
+  ExternalGUID     String   @db.VarChar(255)
+  ExternalSource   String   @db.VarChar(255)
+  ProvNum          BigInt
+  IsCropOld        Int      @db.UnsignedTinyInt
+  OcrResponseData  String   @db.Text
+  ImageCaptureType Int      @default(0) @db.TinyInt
+  PrintHeading     Int      @db.TinyInt
+
+  @@index([MountItemNum], map: "MountItemNum")
+  @@index([PatNum, DocCategory], map: "PNDC")
+  @@index([PatNum], map: "PatNum")
+}
+
+model emailaddress {
+  EmailAddressNum    BigInt @id @default(autoincrement())
+  SMTPserver         String @db.VarChar(255)
+  EmailUsername      String @db.VarChar(255)
+  EmailPassword      String @db.VarChar(255)
+  ServerPort         Int
+  UseSSL             Int    @db.TinyInt
+  SenderAddress      String @db.VarChar(255)
+  Pop3ServerIncoming String @db.VarChar(255)
+  ServerPortIncoming Int
+  UserNum            BigInt
+  AccessToken        String @db.VarChar(2000)
+  RefreshToken       String @db.Text
+  DownloadInbox      Int    @db.TinyInt
+  QueryString        String @db.VarChar(1000)
+  AuthenticationType Int    @db.TinyInt
+
+  @@index([UserNum], map: "UserNum")
+}
+
+model emailattach {
+  EmailAttachNum    BigInt  @id @default(autoincrement())
+  EmailMessageNum   BigInt
+  DisplayedFileName String? @default("") @db.VarChar(255)
+  ActualFileName    String? @default("") @db.VarChar(255)
+  EmailTemplateNum  BigInt
+
+  @@index([EmailMessageNum], map: "EmailMessageNum")
+  @@index([EmailTemplateNum], map: "EmailTemplateNum")
+}
+
+model emailautograph {
+  EmailAutographNum BigInt @id @default(autoincrement())
+  Description       String @db.Text
+  EmailAddress      String @db.VarChar(255)
+  AutographText     String @db.Text
+}
+
+model emailhostingtemplate {
+  EmailHostingTemplateNum BigInt @id @default(autoincrement())
+  TemplateName            String @db.VarChar(255)
+  Subject                 String @db.Text
+  BodyPlainText           String @db.MediumText
+  BodyHTML                String @db.MediumText
+  TemplateId              BigInt
+  ClinicNum               BigInt
+  EmailTemplateType       String @db.VarChar(255)
+  TemplateType            String @db.VarChar(255)
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([TemplateId], map: "TemplateId")
+}
+
+model encounter {
+  EncounterNum  BigInt   @id @default(autoincrement())
+  PatNum        BigInt
+  ProvNum       BigInt
+  CodeValue     String   @db.VarChar(30)
+  CodeSystem    String   @db.VarChar(30)
+  Note          String   @db.Text
+  DateEncounter DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+
+  @@index([CodeValue], map: "CodeValue")
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+}
+
+model entrylog {
+  EntryLogNum   BigInt   @id @default(autoincrement())
+  UserNum       BigInt
+  FKeyType      Int      @db.TinyInt
+  FKey          BigInt
+  LogSource     Int      @db.TinyInt
+  EntryDateTime DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([EntryDateTime], map: "EntryDateTime")
+  @@index([FKey], map: "FKey")
+  @@index([UserNum], map: "UserNum")
+}
+
+model eobattach {
+  EobAttachNum    BigInt   @id @default(autoincrement())
+  ClaimPaymentNum BigInt
+  DateTCreated    DateTime @db.DateTime(0)
+  FileName        String   @db.VarChar(255)
+  RawBase64       String   @db.Text
+
+  @@index([ClaimPaymentNum], map: "ClaimPaymentNum")
+}
+
+model equipment {
+  EquipmentNum      BigInt   @id @default(autoincrement())
+  Description       String   @db.Text
+  SerialNumber      String?  @db.VarChar(255)
+  ModelYear         String?  @db.VarChar(2)
+  DatePurchased     DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateSold          DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  PurchaseCost      Float
+  MarketValue       Float
+  Location          String   @db.Text
+  DateEntry         DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  ProvNumCheckedOut BigInt
+  DateCheckedOut    DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateExpectedBack  DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DispenseNote      String   @db.Text
+  Status            String   @db.Text
+
+  @@index([ProvNumCheckedOut], map: "ProvNumCheckedOut")
+}
+
+model erouting {
+  ERoutingNum   BigInt   @id @default(autoincrement())
+  Description   String   @db.VarChar(255)
+  PatNum        BigInt
+  ClinicNum     BigInt
+  SecDateTEntry DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  IsComplete    Int      @db.TinyInt
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([PatNum], map: "PatNum")
+}
+
+model eroutingaction {
+  ERoutingActionNum  BigInt   @id @default(autoincrement())
+  ERoutingNum        BigInt
+  ItemOrder          Int
+  ERoutingActionType Int      @db.TinyInt
+  UserNum            BigInt
+  IsComplete         Int      @db.TinyInt
+  DateTimeComplete   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ForeignKeyType     Int      @db.TinyInt
+  ForeignKey         BigInt
+  LabelOverride      String   @default("") @db.VarChar(255)
+
+  @@index([ERoutingNum], map: "ERoutingNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model eroutingactiondef {
+  ERoutingActionDefNum BigInt   @id @default(autoincrement())
+  ERoutingDefNum       BigInt
+  ERoutingActionType   Int      @db.TinyInt
+  ItemOrder            Int
+  SecDateTEntry        DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateTLastModified    DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ForeignKeyType       Int      @db.TinyInt
+  ForeignKey           BigInt
+  LabelOverride        String   @default("") @db.VarChar(255)
+
+  @@index([ERoutingDefNum], map: "ERoutingDefNum")
+}
+
+model eroutingdef {
+  ERoutingDefNum   BigInt   @id @default(autoincrement())
+  ClinicNum        BigInt
+  Description      String   @db.VarChar(255)
+  UserNumCreated   BigInt
+  UserNumModified  BigInt
+  SecDateTEntered  DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateLastModified DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([UserNumCreated], map: "UserNumCreated")
+  @@index([UserNumModified], map: "UserNumModified")
+}
+
+model eroutingdeflink {
+  ERoutingDefLinkNum BigInt @id @default(autoincrement())
+  ERoutingDefNum     BigInt
+  Fkey               BigInt
+  ERoutingType       Int    @db.TinyInt
+
+  @@index([ERoutingDefNum], map: "ERoutingDefNum")
+  @@index([Fkey], map: "Fkey")
+}
+
+model erxlog {
+  ErxLogNum  BigInt   @id @default(autoincrement())
+  PatNum     BigInt
+  MsgText    String   @db.MediumText
+  DateTStamp DateTime @default(now()) @db.Timestamp(0)
+  ProvNum    BigInt
+  UserNum    BigInt
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model eservicelog {
+  EServiceLogNum   BigInt   @id @default(autoincrement())
+  LogDateTime      DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  PatNum           BigInt
+  EServiceType     Int?     @db.TinyInt
+  EServiceAction   Int?     @db.SmallInt
+  KeyType          Int?     @db.SmallInt
+  LogGuid          String   @db.VarChar(36)
+  ClinicNum        BigInt?
+  FKey             BigInt?
+  DateTimeUploaded DateTime @default(dbgenerated("('0001-01-01 12:00:00')")) @db.DateTime(0)
+  Note             String   @db.VarChar(255)
+
+  @@index([ClinicNum, LogDateTime], map: "ClinicDateTime")
+  @@index([DateTimeUploaded], map: "DateTimeUploaded")
+  @@index([PatNum], map: "PatNum")
+}
+
+model eserviceshortguid {
+  EServiceShortGuidNum BigInt   @id @default(autoincrement())
+  EServiceCode         String   @db.VarChar(255)
+  ShortGuid            String   @db.VarChar(255)
+  ShortURL             String   @db.VarChar(255)
+  FKey                 BigInt
+  FKeyType             String   @db.VarChar(255)
+  DateTimeExpiration   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateTEntry           DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([FKey], map: "FKey")
+  @@index([ShortGuid], map: "ShortGuid")
+}
+
+model eservicesignal {
+  EServiceSignalNum BigInt   @id @default(autoincrement())
+  ServiceCode       Int
+  ReasonCategory    Int
+  ReasonCode        Int
+  Severity          Int      @db.TinyInt
+  Description       String   @db.Text
+  SigDateTime       DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  Tag               String   @db.Text
+  IsProcessed       Int      @db.TinyInt
+}
+
+model etrans {
+  EtransNum            BigInt   @id @default(autoincrement())
+  DateTimeTrans        DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ClearingHouseNum     BigInt
+  Etype                Int      @db.UnsignedTinyInt
+  ClaimNum             BigInt
+  OfficeSequenceNumber Int
+  CarrierTransCounter  Int
+  CarrierTransCounter2 Int
+  CarrierNum           BigInt
+  CarrierNum2          BigInt
+  PatNum               BigInt
+  BatchNumber          Int
+  AckCode              String?  @db.VarChar(255)
+  TransSetNum          Int
+  Note                 String?  @db.Text
+  EtransMessageTextNum BigInt
+  AckEtransNum         BigInt
+  PlanNum              BigInt
+  InsSubNum            BigInt
+  TranSetId835         String   @db.VarChar(255)
+  CarrierNameRaw       String   @db.VarChar(60)
+  PatientNameRaw       String   @db.VarChar(133)
+  UserNum              BigInt
+
+  @@index([AckEtransNum], map: "AckEtransNum")
+  @@index([CarrierNum], map: "CarrierNum")
+  @@index([CarrierNum2], map: "CarrierNum2")
+  @@index([ClaimNum], map: "ClaimNum")
+  @@index([ClearingHouseNum], map: "ClearingHouseNum")
+  @@index([EtransMessageTextNum], map: "EtransMessageTextNum")
+  @@index([Etype, DateTimeTrans], map: "EtransTypeAndDate")
+  @@index([InsSubNum], map: "InsSubNum")
+  @@index([PatNum], map: "PatNum")
+  @@index([PlanNum], map: "PlanNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model etrans835 {
+  Etrans835Num      BigInt @id @default(autoincrement())
+  EtransNum         BigInt
+  PayerName         String @db.VarChar(60)
+  TransRefNum       String @db.VarChar(50)
+  InsPaid           Float
+  ControlId         String @db.VarChar(9)
+  PaymentMethodCode String @db.VarChar(3)
+  PatientName       String @db.VarChar(100)
+  Status            Int    @db.TinyInt
+  AutoProcessed     Int    @db.TinyInt
+  IsApproved        Int    @db.TinyInt
+
+  @@index([EtransNum], map: "EtransNum")
+}
+
+model etrans835attach {
+  Etrans835AttachNum BigInt   @id @default(autoincrement())
+  EtransNum          BigInt
+  ClaimNum           BigInt
+  ClpSegmentIndex    Int
+  DateTimeEntry      DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([ClaimNum], map: "ClaimNum")
+  @@index([EtransNum], map: "EtransNum")
+}
+
+model etransmessagetext {
+  EtransMessageTextNum BigInt @id @default(autoincrement())
+  MessageText          String @db.MediumText
+}
+
+model evaluation {
+  EvaluationNum       BigInt   @id @default(autoincrement())
+  InstructNum         BigInt
+  StudentNum          BigInt
+  SchoolCourseNum     BigInt
+  EvalTitle           String   @db.VarChar(255)
+  DateEval            DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  GradingScaleNum     BigInt
+  OverallGradeShowing String   @db.VarChar(255)
+  OverallGradeNumber  Float    @db.Float
+  Notes               String   @db.Text
+
+  @@index([GradingScaleNum], map: "GradingScaleNum")
+  @@index([InstructNum], map: "InstructNum")
+  @@index([SchoolCourseNum], map: "SchoolCourseNum")
+  @@index([StudentNum], map: "StudentNum")
+}
+
+model evaluationcriterion {
+  EvaluationCriterionNum BigInt @id @default(autoincrement())
+  EvaluationNum          BigInt
+  CriterionDescript      String @db.VarChar(255)
+  IsCategoryName         Int    @db.TinyInt
+  GradingScaleNum        BigInt
+  GradeShowing           String @db.VarChar(255)
+  GradeNumber            Float  @db.Float
+  Notes                  String @db.Text
+  ItemOrder              Int
+  MaxPointsPoss          Float  @db.Float
+
+  @@index([EvaluationNum], map: "EvaluationNum")
+  @@index([GradingScaleNum], map: "GradingScaleNum")
+}
+
+model evaluationcriteriondef {
+  EvaluationCriterionDefNum BigInt @id @default(autoincrement())
+  EvaluationDefNum          BigInt
+  CriterionDescript         String @db.VarChar(255)
+  IsCategoryName            Int    @db.TinyInt
+  GradingScaleNum           BigInt
+  ItemOrder                 Int
+  MaxPointsPoss             Float  @db.Float
+
+  @@index([EvaluationDefNum], map: "EvaluationDefNum")
+  @@index([GradingScaleNum], map: "GradingScaleNum")
+}
+
+model evaluationdef {
+  EvaluationDefNum BigInt @id @default(autoincrement())
+  SchoolCourseNum  BigInt
+  EvalTitle        String @db.VarChar(255)
+  GradingScaleNum  BigInt
+
+  @@index([GradingScaleNum], map: "GradingScaleNum")
+  @@index([SchoolCourseNum], map: "SchoolCourseNum")
+}
+
+model famaging {
+  PatNum     BigInt @id @default(autoincrement())
+  Bal_0_30   Float
+  Bal_31_60  Float
+  Bal_61_90  Float
+  BalOver90  Float
+  InsEst     Float
+  BalTotal   Float
+  PayPlanDue Float
+}
+
+model familyhealth {
+  FamilyHealthNum BigInt @id @default(autoincrement())
+  PatNum          BigInt
+  Relationship    Int    @db.TinyInt
+  DiseaseDefNum   BigInt
+  PersonName      String @db.VarChar(255)
+
+  @@index([DiseaseDefNum], map: "DiseaseDefNum")
+  @@index([PatNum], map: "PatNum")
+}
+
+model fee {
+  FeeNum          BigInt   @id @default(autoincrement())
+  Amount          Float    @default(0)
+  OldCode         String   @default("") @db.VarChar(15)
+  FeeSched        BigInt
+  UseDefaultFee   Boolean  @default(false)
+  UseDefaultCov   Boolean  @default(false)
+  CodeNum         BigInt
+  ClinicNum       BigInt
+  ProvNum         BigInt
+  SecUserNumEntry BigInt
+  SecDateEntry    DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  SecDateTEdit    DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([CodeNum], map: "CodeNum")
+  @@index([FeeSched, CodeNum, ClinicNum, ProvNum], map: "FeeSchedCodeClinicProv")
+  @@index([ProvNum], map: "ProvNum")
+  @@index([SecUserNumEntry], map: "SecUserNumEntry")
+  @@index([OldCode], map: "indexADACode")
+}
+
+model feesched {
+  FeeSchedNum     BigInt   @id @default(autoincrement())
+  Description     String?  @db.VarChar(255)
+  FeeSchedType    Int
+  ItemOrder       Int
+  IsHidden        Boolean
+  IsGlobal        Int      @db.TinyInt
+  SecUserNumEntry BigInt
+  SecDateEntry    DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  SecDateTEdit    DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([SecUserNumEntry], map: "SecUserNumEntry")
+}
+
+model languageforeign {
+  LanguageForeignNum BigInt  @id @default(autoincrement())
+  ClassType          String? @db.Text
+  English            String? @db.Text
+  Culture            String? @default("") @db.VarChar(255)
+  Translation        String? @db.Text
+  Comments           String? @db.Text
+}
+
+model languagepat {
+  LanguagePatNum   BigInt @id @default(autoincrement())
+  PrefName         String @db.VarChar(255)
+  Language         String @db.VarChar(255)
+  Translation      String @db.Text
+  EFormFieldDefNum BigInt
+
+  @@index([EFormFieldDefNum], map: "EFormFieldDefNum")
+  @@index([PrefName], map: "PrefName")
+}
+
+model letter {
+  LetterNum   BigInt  @id @default(autoincrement())
+  Description String? @default("") @db.VarChar(255)
+  BodyText    String? @db.Text
+}
+
+model lettermerge {
+  LetterMergeNum BigInt  @id @default(autoincrement())
+  Description    String? @default("") @db.VarChar(255)
+  TemplateName   String? @default("") @db.VarChar(255)
+  DataFileName   String? @default("") @db.VarChar(255)
+  Category       BigInt
+  ImageFolder    BigInt
+}
+
+model lettermergefield {
+  FieldNum       BigInt  @id @default(autoincrement())
+  LetterMergeNum BigInt
+  FieldName      String? @default("") @db.VarChar(255)
+}
+
+model limitedbetafeature {
+  LimitedBetaFeatureNum     BigInt @id @default(autoincrement())
+  LimitedBetaFeatureTypeNum BigInt
+  ClinicNum                 BigInt
+  IsSignedUp                Int    @db.TinyInt
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([LimitedBetaFeatureTypeNum], map: "LimitedBetaFeatureTypeNum")
+}
+
+model loginattempt {
+  LoginAttemptNum BigInt   @id @default(autoincrement())
+  UserName        String   @db.VarChar(255)
+  LoginType       Int      @db.TinyInt
+  DateTFail       DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([UserName(length: 10)], map: "UserName")
+}
+
+model loinc {
+  LoincNum                BigInt @id @default(autoincrement())
+  LoincCode               String @db.VarChar(255)
+  Component               String @db.VarChar(255)
+  PropertyObserved        String @db.VarChar(255)
+  TimeAspct               String @db.VarChar(255)
+  SystemMeasured          String @db.VarChar(255)
+  ScaleType               String @db.VarChar(255)
+  MethodType              String @db.VarChar(255)
+  StatusOfCode            String @db.VarChar(255)
+  NameShort               String @db.VarChar(255)
+  ClassType               String @db.VarChar(255)
+  UnitsRequired           Int    @db.TinyInt
+  OrderObs                String @db.VarChar(255)
+  HL7FieldSubfieldID      String @db.VarChar(255)
+  ExternalCopyrightNotice String @db.Text
+  NameLongCommon          String @db.VarChar(255)
+  UnitsUCUM               String @db.VarChar(255)
+  RankCommonTests         Int
+  RankCommonOrders        Int
+
+  @@index([LoincCode], map: "LoincCode")
+}
+
+model medicalorder {
+  MedicalOrderNum BigInt   @id @default(autoincrement())
+  MedOrderType    Int      @db.TinyInt
+  PatNum          BigInt
+  DateTimeOrder   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  Description     String   @db.VarChar(255)
+  IsDiscontinued  Int      @db.TinyInt
+  ProvNum         BigInt
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+}
+
+model medication {
+  MedicationNum BigInt   @id @default(autoincrement())
+  MedName       String?  @default("") @db.VarChar(255)
+  GenericNum    BigInt
+  Notes         String?  @db.Text
+  DateTStamp    DateTime @default(now()) @db.Timestamp(0)
+  RxCui         BigInt
+
+  @@index([RxCui], map: "RxCui")
+}
+
+model medicationpat {
+  MedicationPatNum BigInt   @id @default(autoincrement())
+  PatNum           BigInt
+  MedicationNum    BigInt
+  PatNote          String?  @db.Text
+  DateTStamp       DateTime @default(now()) @db.Timestamp(0)
+  DateStart        DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateStop         DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  ProvNum          BigInt
+  MedDescript      String   @db.VarChar(255)
+  RxCui            BigInt
+  ErxGuid          String   @db.VarChar(255)
+  IsCpoe           Int      @db.TinyInt
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+  @@index([RxCui], map: "RxCui")
+}
+
+model medlab {
+  MedLabNum           BigInt   @id @default(autoincrement())
+  SendingApp          String   @db.VarChar(255)
+  SendingFacility     String   @db.VarChar(255)
+  PatNum              BigInt
+  ProvNum             BigInt
+  PatIDLab            String   @db.VarChar(255)
+  PatIDAlt            String   @db.VarChar(255)
+  PatAge              String   @db.VarChar(255)
+  PatAccountNum       String   @db.VarChar(255)
+  PatFasting          Int      @db.TinyInt
+  SpecimenID          String   @db.VarChar(255)
+  SpecimenIDFiller    String   @db.VarChar(255)
+  ObsTestID           String   @db.VarChar(255)
+  ObsTestDescript     String   @db.VarChar(255)
+  ObsTestLoinc        String   @db.VarChar(255)
+  ObsTestLoincText    String   @db.VarChar(255)
+  DateTimeCollected   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  TotalVolume         String   @db.VarChar(255)
+  ActionCode          String   @db.VarChar(255)
+  ClinicalInfo        String   @db.VarChar(255)
+  DateTimeEntered     DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  OrderingProvNPI     String   @db.VarChar(255)
+  OrderingProvLocalID String   @db.VarChar(255)
+  OrderingProvLName   String   @db.VarChar(255)
+  OrderingProvFName   String   @db.VarChar(255)
+  SpecimenIDAlt       String   @db.VarChar(255)
+  DateTimeReported    DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ResultStatus        String   @db.VarChar(255)
+  ParentObsID         String   @db.VarChar(255)
+  ParentObsTestID     String   @db.VarChar(255)
+  NotePat             String   @db.Text
+  NoteLab             String   @db.Text
+  FileName            String   @db.VarChar(255)
+  OriginalPIDSegment  String   @db.Text
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+}
+
+model medlabfacattach {
+  MedLabFacAttachNum BigInt @id @default(autoincrement())
+  MedLabNum          BigInt
+  MedLabResultNum    BigInt
+  MedLabFacilityNum  BigInt
+
+  @@index([MedLabFacilityNum], map: "MedLabFacilityNum")
+  @@index([MedLabNum], map: "MedLabNum")
+  @@index([MedLabResultNum], map: "MedLabResultNum")
+}
+
+model medlabfacility {
+  MedLabFacilityNum BigInt @id @default(autoincrement())
+  FacilityName      String @db.VarChar(255)
+  Address           String @db.VarChar(255)
+  City              String @db.VarChar(255)
+  State             String @db.VarChar(255)
+  Zip               String @db.VarChar(255)
+  Phone             String @db.VarChar(255)
+  DirectorTitle     String @db.VarChar(255)
+  DirectorLName     String @db.VarChar(255)
+  DirectorFName     String @db.VarChar(255)
+}
+
+model medlabresult {
+  MedLabResultNum BigInt   @id @default(autoincrement())
+  MedLabNum       BigInt
+  ObsID           String   @db.VarChar(255)
+  ObsText         String   @db.VarChar(255)
+  ObsLoinc        String   @db.VarChar(255)
+  ObsLoincText    String   @db.VarChar(255)
+  ObsIDSub        String   @db.VarChar(255)
+  ObsValue        String   @db.Text
+  ObsSubType      String   @db.VarChar(255)
+  ObsUnits        String   @db.VarChar(255)
+  ReferenceRange  String   @db.VarChar(255)
+  AbnormalFlag    String   @db.VarChar(255)
+  ResultStatus    String   @db.VarChar(255)
+  DateTimeObs     DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  FacilityID      String   @db.VarChar(255)
+  DocNum          BigInt
+  Note            String   @db.Text
+
+  @@index([DocNum], map: "DocNum")
+  @@index([MedLabNum], map: "MedLabNum")
+}
+
+model medlabspecimen {
+  MedLabSpecimenNum BigInt   @id @default(autoincrement())
+  MedLabNum         BigInt
+  SpecimenID        String   @db.VarChar(255)
+  SpecimenDescript  String   @db.VarChar(255)
+  DateTimeCollected DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([MedLabNum], map: "MedLabNum")
+}
+
+model mobileappdevice {
+  MobileAppDeviceNum    BigInt   @id @default(autoincrement())
+  ClinicNum             BigInt
+  DeviceName            String   @db.VarChar(255)
+  UniqueID              String   @db.VarChar(255)
+  IsEclipboardEnabled   Int      @db.TinyInt
+  EclipboardLastAttempt DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  EclipboardLastLogin   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  PatNum                BigInt
+  LastCheckInActivity   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  IsBYODDevice          Int      @db.TinyInt
+  DevicePage            Int      @db.TinyInt
+  UserNum               BigInt
+  IsODTouchEnabled      Int      @db.TinyInt
+  ODTouchLastLogin      DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ODTouchLastAttempt    DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([PatNum], map: "PatNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model mobilebrandingprofile {
+  MobileBrandingProfileNum BigInt   @id @default(autoincrement())
+  ClinicNum                BigInt
+  OfficeDescription        String   @db.VarChar(255)
+  LogoFilePath             String   @db.VarChar(255)
+  DateTStamp               DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([ClinicNum], map: "ClinicNum")
+}
+
+model mobiledatabyte {
+  MobileDataByteNum BigInt   @id @default(autoincrement())
+  RawBase64Data     String   @db.MediumText
+  RawBase64Code     String   @db.MediumText
+  RawBase64Tag      String   @db.MediumText
+  PatNum            BigInt
+  ActionType        Int      @db.TinyInt
+  DateTimeEntry     DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateTimeExpires   DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([PatNum], map: "PatNum")
+  @@index([RawBase64Code(length: 16)], map: "RawBase64Code")
+}
+
+model mobilenotification {
+  MobileNotificationNum BigInt   @id @default(autoincrement())
+  NotificationType      Int      @db.TinyInt
+  DeviceId              String   @db.VarChar(255)
+  PrimaryKeys           String   @db.Text
+  Tags                  String   @db.Text
+  DateTimeEntry         DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateTimeExpires       DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  AppTarget             Int      @db.TinyInt
+}
+
+model mount {
+  MountNum           BigInt   @id @default(autoincrement())
+  PatNum             BigInt
+  DocCategory        BigInt
+  DateCreated        DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  Description        String   @db.VarChar(255)
+  Note               String   @db.Text
+  Width              Int
+  Height             Int
+  ColorBack          Int
+  ProvNum            BigInt
+  ColorFore          Int
+  ColorTextBack      Int
+  FlipOnAcquire      Int      @db.TinyInt
+  AdjModeAfterSeries Int      @db.TinyInt
+
+  @@index([PatNum], map: "PatNum")
+}
+
+model mountdef {
+  MountDefNum        BigInt  @id @default(autoincrement())
+  Description        String? @db.VarChar(255)
+  ItemOrder          Int
+  Width              Int
+  Height             Int
+  ColorBack          Int
+  ColorFore          Int
+  ColorTextBack      Int
+  ScaleValue         String  @db.VarChar(255)
+  DefaultCat         BigInt
+  FlipOnAcquire      Int     @db.TinyInt
+  AdjModeAfterSeries Int     @db.TinyInt
+}
+
+model mountitem {
+  MountItemNum    BigInt @id @default(autoincrement())
+  MountNum        BigInt
+  Xpos            Int
+  Ypos            Int
+  ItemOrder       Int
+  Width           Int
+  Height          Int
+  RotateOnAcquire Int
+  ToothNumbers    String @db.VarChar(255)
+  TextShowing     String @db.Text
+  FontSize        Float  @db.Float
+
+  @@index([MountNum], map: "MountNum")
+}
+
+model mountitemdef {
+  MountItemDefNum BigInt @id @default(autoincrement())
+  MountDefNum     BigInt
+  Xpos            Int
+  Ypos            Int
+  Width           Int
+  Height          Int
+  ItemOrder       Int
+  RotateOnAcquire Int
+  ToothNumbers    String @db.VarChar(255)
+  TextShowing     String @db.Text
+  FontSize        Float  @db.Float
+}
+
+model msgtopaysent {
+  MsgToPaySentNum     BigInt   @id @default(autoincrement())
+  PatNum              BigInt
+  ClinicNum           BigInt
+  SendStatus          Int      @db.TinyInt
+  Source              Int      @db.TinyInt
+  MessageType         Int      @db.TinyInt
+  MessageFk           BigInt
+  Subject             String   @db.Text
+  Message             String   @db.Text
+  EmailType           Int      @db.TinyInt
+  DateTimeEntry       DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateTimeSent        DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ResponseDescript    String   @db.Text
+  ApptReminderRuleNum BigInt
+  ShortGUID           String   @db.VarChar(255)
+  DateTimeSendFailed  DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([DateTimeSent], map: "DateTimeSent")
+  @@index([MessageFk], map: "MessageFk")
+  @@index([PatNum], map: "PatNum")
+}
+
+model oidexternal {
+  OIDExternalNum BigInt @id @default(autoincrement())
+  IDType         String @db.VarChar(255)
+  IDInternal     BigInt
+  IDExternal     String @db.VarChar(255)
+  rootExternal   String @db.VarChar(255)
+
+  @@index([IDType, IDInternal], map: "IDType")
+  @@index([rootExternal(length: 62), IDExternal(length: 62)], map: "rootExternal")
+}
+
+model oidinternal {
+  OIDInternalNum BigInt @id @default(autoincrement())
+  IDType         String @db.VarChar(255)
+  IDRoot         String @db.VarChar(255)
+}
+
+model operatory {
+  OperatoryNum   BigInt   @id @default(autoincrement())
+  OpName         String?  @default("") @db.VarChar(255)
+  Abbrev         String?  @default("") @db.VarChar(255)
+  ItemOrder      Int      @db.UnsignedSmallInt
+  IsHidden       Int      @db.UnsignedTinyInt
+  ProvDentist    BigInt
+  ProvHygienist  BigInt
+  IsHygiene      Int      @db.UnsignedTinyInt
+  ClinicNum      BigInt
+  DateTStamp     DateTime @default(now()) @db.Timestamp(0)
+  SetProspective Int      @db.TinyInt
+  IsWebSched     Int      @db.TinyInt
+  IsNewPatAppt   Int      @db.TinyInt
+  OperatoryType  BigInt
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([OperatoryType], map: "OperatoryType")
+  @@index([ProvDentist], map: "ProvDentist")
+  @@index([ProvHygienist], map: "ProvHygienist")
+}
+
+model orionproc {
+  OrionProcNum    BigInt   @id @default(autoincrement())
+  ProcNum         BigInt
+  DPC             Int      @db.TinyInt
+  DateScheduleBy  DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateStopClock   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  Status2         Int
+  IsOnCall        Int      @db.TinyInt
+  IsEffectiveComm Int      @db.TinyInt
+  IsRepair        Int      @db.TinyInt
+  DPCpost         Int      @db.TinyInt
+
+  @@index([ProcNum], map: "ProcNum")
+}
+
+model orthocase {
+  OrthoCaseNum       BigInt   @id @default(autoincrement())
+  PatNum             BigInt
+  ProvNum            BigInt
+  ClinicNum          BigInt
+  Fee                Float
+  FeeInsPrimary      Float
+  FeePat             Float
+  BandingDate        DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DebondDate         DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DebondDateExpected DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  IsTransfer         Int      @db.TinyInt
+  OrthoType          BigInt
+  SecDateTEntry      DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  SecUserNumEntry    BigInt
+  SecDateTEdit       DateTime @default(now()) @db.Timestamp(0)
+  IsActive           Int      @db.TinyInt
+  FeeInsSecondary    Float
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([OrthoType], map: "OrthoType")
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+  @@index([SecUserNumEntry], map: "SecUserNumEntry")
+}
+
+model orthochart {
+  OrthoChartNum    BigInt   @id @default(autoincrement())
+  PatNum           BigInt
+  DateService      DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  FieldName        String   @db.VarChar(255)
+  FieldValue       String   @db.Text
+  UserNum          BigInt
+  ProvNum          BigInt
+  OrthoChartRowNum BigInt
+
+  @@index([OrthoChartRowNum], map: "OrthoChartRowNum")
+  @@index([PatNum], map: "PatNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model orthochartlog {
+  OrthoChartLogNum BigInt   @id @default(autoincrement())
+  PatNum           BigInt
+  ComputerName     String   @db.VarChar(255)
+  DateTimeLog      DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  DateTimeService  DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  UserNum          BigInt
+  ProvNum          BigInt
+  OrthoChartRowNum BigInt
+  LogData          String   @db.MediumText
+}
+
+model orthochartrow {
+  OrthoChartRowNum BigInt   @id @default(autoincrement())
+  PatNum           BigInt
+  DateTimeService  DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  UserNum          BigInt
+  ProvNum          BigInt
+  Signature        String   @db.Text
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ProvNum], map: "ProvNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model orthocharttab {
+  OrthoChartTabNum BigInt @id @default(autoincrement())
+  TabName          String @db.VarChar(255)
+  ItemOrder        Int
+  IsHidden         Int    @db.TinyInt
+}
+
+model orthocharttablink {
+  OrthoChartTabLinkNum BigInt @id @default(autoincrement())
+  ItemOrder            Int
+  OrthoChartTabNum     BigInt
+  DisplayFieldNum      BigInt
+  ColumnWidthOverride  Int
+
+  @@index([DisplayFieldNum], map: "DisplayFieldNum")
+  @@index([OrthoChartTabNum], map: "OrthoChartTabNum")
+}
+
+model orthohardware {
+  OrthoHardwareNum     BigInt   @id @default(autoincrement())
+  PatNum               BigInt
+  DateExam             DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  OrthoHardwareType    Int      @db.TinyInt
+  OrthoHardwareSpecNum BigInt
+  ToothRange           String   @db.VarChar(255)
+  Note                 String   @db.VarChar(255)
+  IsHidden             Int      @db.TinyInt
+
+  @@index([PatNum], map: "PatNum")
+}
+
+model orthohardwarespec {
+  OrthoHardwareSpecNum BigInt @id @default(autoincrement())
+  OrthoHardwareType    Int    @db.TinyInt
+  Description          String @db.VarChar(255)
+  ItemColor            Int
+  IsHidden             Int    @db.TinyInt
+  ItemOrder            Int
+}
+
+model orthoplanlink {
+  OrthoPlanLinkNum BigInt   @id @default(autoincrement())
+  OrthoCaseNum     BigInt
+  LinkType         Int      @db.TinyInt
+  FKey             BigInt
+  IsActive         Int      @db.TinyInt
+  SecDateTEntry    DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  SecUserNumEntry  BigInt
+
+  @@index([FKey], map: "FKey")
+  @@index([OrthoCaseNum], map: "OrthoCaseNum")
+}
+
+model orthoproclink {
+  OrthoProcLinkNum BigInt   @id @default(autoincrement())
+  OrthoCaseNum     BigInt
+  ProcNum          BigInt
+  SecDateTEntry    DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  SecUserNumEntry  BigInt
+  ProcLinkType     Int      @db.TinyInt
+
+  @@index([OrthoCaseNum], map: "OrthoCaseNum")
+  @@index([ProcNum], map: "ProcNum")
+  @@index([SecUserNumEntry], map: "SecUserNumEntry")
+}
+
+model orthorx {
+  OrthoRxNum           BigInt @id @default(autoincrement())
+  OrthoHardwareSpecNum BigInt
+  Description          String @db.VarChar(255)
+  ToothRange           String @db.VarChar(255)
+  ItemOrder            Int
+
+  @@index([OrthoHardwareSpecNum], map: "OrthoHardwareSpecNum")
+}
+
+model orthoschedule {
+  OrthoScheduleNum    BigInt   @id @default(autoincrement())
+  BandingDateOverride DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DebondDateOverride  DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  BandingAmount       Float
+  VisitAmount         Float
+  DebondAmount        Float
+  IsActive            Int      @db.TinyInt
+  SecDateTEdit        DateTime @default(now()) @db.Timestamp(0)
+}
+
+model patfield {
+  PatFieldNum     BigInt   @id @default(autoincrement())
+  PatNum          BigInt
+  FieldName       String?  @default("") @db.VarChar(255)
+  FieldValue      String?  @db.Text
+  SecUserNumEntry BigInt
+  SecDateEntry    DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  SecDateTEdit    DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([PatNum], map: "PatNum")
+  @@index([SecUserNumEntry], map: "SecUserNumEntry")
+}
+
+model patfielddef {
+  PatFieldDefNum BigInt  @id @default(autoincrement())
+  FieldName      String? @default("") @db.VarChar(255)
+  FieldType      Int     @db.TinyInt
+  PickList       String  @db.Text
+  ItemOrder      Int
+  IsHidden       Int     @db.TinyInt
+}
+
+model patfieldpickitem {
+  PatFieldPickItemNum BigInt @id @default(autoincrement())
+  PatFieldDefNum      BigInt
+  Name                String @db.VarChar(255)
+  Abbreviation        String @db.VarChar(255)
+  IsHidden            Int    @db.TinyInt
+  ItemOrder           Int
+
+  @@index([PatFieldDefNum], map: "PatFieldDefNum")
+}
+
+model patient {
+  PatNum                    BigInt    @id @default(autoincrement())
+  LName                     String?   @default("") @db.VarChar(100)
+  FName                     String?   @default("") @db.VarChar(100)
+  MiddleI                   String?   @default("") @db.VarChar(100)
+  Preferred                 String?   @default("") @db.VarChar(100)
+  PatStatus                 Int       @default(0) @db.UnsignedTinyInt
+  Gender                    Int       @default(0) @db.UnsignedTinyInt
+  Position                  Int       @default(0) @db.UnsignedTinyInt
+  Birthdate                 DateTime  @default(dbgenerated("('0001-01-01')")) @db.Date
+  SSN                       String?   @default("") @db.VarChar(100)
+  Address                   String?   @default("") @db.VarChar(100)
+  Address2                  String?   @default("") @db.VarChar(100)
+  City                      String?   @default("") @db.VarChar(100)
+  State                     String?   @default("") @db.VarChar(100)
+  Zip                       String?   @default("") @db.VarChar(100)
+  HmPhone                   String?   @default("") @db.VarChar(30)
+  WkPhone                   String?   @default("") @db.VarChar(30)
+  WirelessPhone             String?   @default("") @db.VarChar(30)
+  Guarantor                 BigInt
+  CreditType                String?   @default("") @db.Char(1)
+  Email                     String?   @default("") @db.VarChar(100)
+  Salutation                String?   @default("") @db.VarChar(100)
+  EstBalance                Float     @default(0)
+  PriProv                   BigInt
+  SecProv                   BigInt
+  FeeSched                  BigInt
+  BillingType               BigInt
+  ImageFolder               String?   @default("") @db.VarChar(100)
+  AddrNote                  String?   @db.Text
+  FamFinUrgNote             String?   @db.Text
+  MedUrgNote                String?   @default("") @db.VarChar(255)
+  ApptModNote               String?   @default("") @db.VarChar(255)
+  StudentStatus             String?   @default("") @db.Char(1)
+  SchoolName                String    @db.VarChar(255)
+  ChartNumber               String?   @default("") @db.VarChar(20)
+  MedicaidID                String?   @default("") @db.VarChar(20)
+  Bal_0_30                  Float     @default(0)
+  Bal_31_60                 Float     @default(0)
+  Bal_61_90                 Float     @default(0)
+  BalOver90                 Float     @default(0)
+  InsEst                    Float     @default(0)
+  BalTotal                  Float     @default(0)
+  EmployerNum               BigInt
+  EmploymentNote            String?   @default("") @db.VarChar(255)
+  County                    String?   @default("") @db.VarChar(255)
+  GradeLevel                Int       @default(0) @db.TinyInt
+  Urgency                   Int       @default(0) @db.TinyInt
+  DateFirstVisit            DateTime  @default(dbgenerated("('0001-01-01')")) @db.Date
+  ClinicNum                 BigInt
+  HasIns                    String?   @default("") @db.VarChar(255)
+  TrophyFolder              String?   @default("") @db.VarChar(255)
+  PlannedIsDone             Int       @db.UnsignedTinyInt
+  Premed                    Int       @db.UnsignedTinyInt
+  Ward                      String?   @default("") @db.VarChar(255)
+  PreferConfirmMethod       Int       @db.UnsignedTinyInt
+  PreferContactMethod       Int       @db.UnsignedTinyInt
+  PreferRecallMethod        Int       @db.UnsignedTinyInt
+  SchedBeforeTime           DateTime? @db.Time(0)
+  SchedAfterTime            DateTime? @db.Time(0)
+  SchedDayOfWeek            Int       @db.UnsignedTinyInt
+  Language                  String?   @default("") @db.VarChar(100)
+  AdmitDate                 DateTime  @default(dbgenerated("('0001-01-01')")) @db.Date
+  Title                     String?   @db.VarChar(15)
+  PayPlanDue                Float
+  SiteNum                   BigInt
+  DateTStamp                DateTime  @default(now()) @db.Timestamp(0)
+  ResponsParty              BigInt
+  CanadianEligibilityCode   Int       @db.TinyInt
+  AskToArriveEarly          Int
+  PreferContactConfidential Int       @db.TinyInt
+  SuperFamily               BigInt
+  TxtMsgOk                  Int       @db.TinyInt
+  SmokingSnoMed             String    @db.VarChar(32)
+  Country                   String    @db.VarChar(255)
+  DateTimeDeceased          DateTime  @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  BillingCycleDay           Int       @default(1)
+  SecUserNumEntry           BigInt
+  SecDateEntry              DateTime  @default(dbgenerated("('0001-01-01')")) @db.Date
+  HasSuperBilling           Int       @db.TinyInt
+  PatNumCloneFrom           BigInt
+  DiscountPlanNum           BigInt
+  HasSignedTil              Int       @db.TinyInt
+  ShortCodeOptIn            Int       @db.TinyInt
+  SecurityHash              String    @db.VarChar(255)
+  colorIndex                Int       @default(1)
+
+  @@index([Birthdate, PatStatus], map: "BirthdateStatus")
+  @@index([ChartNumber], map: "ChartNumber")
+  @@index([ClinicNum, PatStatus], map: "ClinicPatStatus")
+  @@index([DiscountPlanNum], map: "DiscountPlanNum")
+  @@index([Email], map: "Email")
+  @@index([FeeSched], map: "FeeSched")
+  @@index([HmPhone], map: "HmPhone")
+  @@index([PatNumCloneFrom], map: "PatNumCloneFrom")
+  @@index([PatStatus], map: "PatStatus")
+  @@index([PriProv], map: "PriProv")
+  @@index([ResponsParty], map: "ResponsParty")
+  @@index([SecDateEntry], map: "SecDateEntry")
+  @@index([SecProv], map: "SecProv")
+  @@index([SecUserNumEntry], map: "SecUserNumEntry")
+  @@index([SiteNum], map: "SiteNum")
+  @@index([SuperFamily], map: "SuperFamily")
+  @@index([WirelessPhone], map: "WirelessPhone")
+  @@index([WkPhone], map: "WkPhone")
+  @@index([FName(length: 10)], map: "indexFName")
+  @@index([Guarantor], map: "indexGuarantor")
+  @@index([LName, FName], map: "indexLFName")
+  @@index([LName(length: 10)], map: "indexLName")
+}
+
+model reactivation {
+  ReactivationNum    BigInt @id @default(autoincrement())
+  PatNum             BigInt
+  ReactivationStatus BigInt
+  ReactivationNote   String @db.Text
+  DoNotContact       Int    @db.TinyInt
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ReactivationStatus], map: "ReactivationStatus")
+}
+
+model recall {
+  RecallNum           BigInt   @id @default(autoincrement())
+  PatNum              BigInt
+  DateDueCalc         DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateDue             DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DatePrevious        DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  RecallInterval      Int      @default(0)
+  RecallStatus        BigInt
+  Note                String?  @db.Text
+  IsDisabled          Int      @default(0) @db.UnsignedTinyInt
+  DateTStamp          DateTime @default(now()) @db.Timestamp(0)
+  RecallTypeNum       BigInt
+  DisableUntilBalance Float
+  DisableUntilDate    DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateScheduled       DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  Priority            Int      @db.TinyInt
+  TimePatternOverride String   @db.VarChar(255)
+
+  @@index([DateDue, IsDisabled, RecallTypeNum, DateScheduled], map: "DateDisabledType")
+  @@index([DatePrevious], map: "DatePrevious")
+  @@index([DateScheduled], map: "DateScheduled")
+  @@index([IsDisabled], map: "IsDisabled")
+  @@index([PatNum], map: "PatNum")
+  @@index([RecallTypeNum], map: "RecallTypeNum")
+}
+
+model recalltrigger {
+  RecallTriggerNum BigInt @id @default(autoincrement())
+  RecallTypeNum    BigInt
+  CodeNum          BigInt
+
+  @@index([CodeNum], map: "CodeNum")
+  @@index([RecallTypeNum], map: "RecallTypeNum")
+}
+
+model recalltype {
+  RecallTypeNum   BigInt  @id @default(autoincrement())
+  Description     String? @db.VarChar(255)
+  DefaultInterval Int
+  TimePattern     String? @db.VarChar(255)
+  Procedures      String? @db.VarChar(255)
+  AppendToSpecial Int     @db.TinyInt
+}
+
+model reconcile {
+  ReconcileNum  BigInt   @id @default(autoincrement())
+  AccountNum    BigInt
+  StartingBal   Float
+  EndingBal     Float
+  DateReconcile DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  IsLocked      Int      @db.UnsignedTinyInt
+}
+
+model recurringcharge {
+  RecurringChargeNum BigInt   @id @default(autoincrement())
+  PatNum             BigInt
+  ClinicNum          BigInt
+  DateTimeCharge     DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  ChargeStatus       Int      @db.TinyInt
+  FamBal             Float
+  PayPlanDue         Float
+  TotalDue           Float
+  RepeatAmt          Float
+  ChargeAmt          Float
+  UserNum            BigInt
+  PayNum             BigInt
+  CreditCardNum      BigInt
+  ErrorMsg           String   @db.Text
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([CreditCardNum], map: "CreditCardNum")
+  @@index([PatNum], map: "PatNum")
+  @@index([PayNum], map: "PayNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model refattach {
+  RefAttachNum       BigInt   @id @default(autoincrement())
+  ReferralNum        BigInt
+  PatNum             BigInt
+  ItemOrder          Int      @default(0) @db.UnsignedSmallInt
+  RefDate            DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  RefType            Int      @db.TinyInt
+  RefToStatus        Int      @db.UnsignedTinyInt
+  Note               String?  @db.Text
+  IsTransitionOfCare Int      @db.TinyInt
+  ProcNum            BigInt
+  DateProcComplete   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  ProvNum            BigInt
+  DateTStamp         DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([PatNum], map: "PatNum")
+  @@index([ProcNum], map: "ProcNum")
+  @@index([ProvNum], map: "ProvNum")
+  @@index([ReferralNum], map: "ReferralNum")
+}
+
+model referral {
+  ReferralNum     BigInt   @id @default(autoincrement())
+  LName           String?  @default("") @db.VarChar(100)
+  FName           String?  @default("") @db.VarChar(100)
+  MName           String?  @default("") @db.VarChar(100)
+  SSN             String?  @default("") @db.VarChar(9)
+  UsingTIN        Boolean  @default(false)
+  Specialty       BigInt
+  ST              String?  @default("") @db.VarChar(2)
+  Telephone       String?  @default("") @db.VarChar(10)
+  Address         String?  @default("") @db.VarChar(100)
+  Address2        String?  @default("") @db.VarChar(100)
+  City            String?  @default("") @db.VarChar(100)
+  Zip             String?  @default("") @db.VarChar(10)
+  Note            String?  @db.Text
+  Phone2          String?  @default("") @db.VarChar(30)
+  IsHidden        Boolean  @default(false)
+  NotPerson       Boolean  @default(false)
+  Title           String?  @default("") @db.VarChar(255)
+  EMail           String?  @default("") @db.VarChar(255)
+  PatNum          BigInt
+  NationalProvID  String?  @db.VarChar(255)
+  Slip            BigInt
+  IsDoctor        Int      @db.TinyInt
+  IsTrustedDirect Int      @db.TinyInt
+  DateTStamp      DateTime @default(now()) @db.Timestamp(0)
+  IsPreferred     Int      @db.TinyInt
+  BusinessName    String   @db.VarChar(255)
+  DisplayNote     String   @db.VarChar(4000)
+}
+
+model taskancestor {
+  TaskAncestorNum BigInt @id @default(autoincrement())
+  TaskNum         BigInt
+  TaskListNum     BigInt
+
+  @@index([TaskListNum, TaskNum], map: "TaskListCov")
+  @@index([TaskNum], map: "TaskNum")
+}
+
+model taskattachment {
+  TaskAttachmentNum BigInt @id @default(autoincrement())
+  TaskNum           BigInt
+  DocNum            BigInt
+  TextValue         String @db.Text
+  Description       String @db.VarChar(255)
+
+  @@index([DocNum], map: "DocNum")
+  @@index([TaskNum], map: "TaskNum")
+}
+
+model taskhist {
+  TaskHistNum       BigInt   @id @default(autoincrement())
+  UserNumHist       BigInt
+  DateTStamp        DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  IsNoteChange      Int      @db.TinyInt
+  TaskNum           BigInt
+  TaskListNum       BigInt
+  DateTask          DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  KeyNum            BigInt
+  Descript          String   @db.Text
+  TaskStatus        Int      @db.TinyInt
+  IsRepeating       Int      @db.TinyInt
+  DateType          Int      @db.TinyInt
+  FromNum           BigInt
+  ObjectType        Int      @db.TinyInt
+  DateTimeEntry     DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  UserNum           BigInt
+  DateTimeFinished  DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  PriorityDefNum    BigInt
+  ReminderGroupId   String   @db.VarChar(20)
+  ReminderType      Int      @db.SmallInt
+  ReminderFrequency Int
+  DateTimeOriginal  DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  SecDateTEdit      DateTime @default(now()) @db.Timestamp(0)
+  DescriptOverride  String   @db.VarChar(255)
+  IsReadOnly        Boolean  @default(false)
+  TriageCategory    BigInt
+
+  @@index([DateTStamp], map: "DateTStamp")
+  @@index([KeyNum], map: "KeyNum")
+  @@index([SecDateTEdit], map: "SecDateTEdit")
+  @@index([TaskNum], map: "TaskNum")
+  @@index([TriageCategory], map: "TriageCategory")
+}
+
+model tasklist {
+  TaskListNum          BigInt   @id @default(autoincrement())
+  Descript             String?  @default("") @db.VarChar(255)
+  Parent               BigInt
+  DateTL               DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  IsRepeating          Int      @db.UnsignedTinyInt
+  DateType             Int      @db.UnsignedTinyInt
+  FromNum              BigInt
+  ObjectType           Int      @db.UnsignedTinyInt
+  DateTimeEntry        DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  GlobalTaskFilterType Int      @db.TinyInt
+  TaskListStatus       Int      @db.TinyInt
+
+  @@index([Parent], map: "indexParent")
+}
+
+model tasknote {
+  TaskNoteNum  BigInt   @id @default(autoincrement())
+  TaskNum      BigInt
+  UserNum      BigInt
+  DateTimeNote DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  Note         String   @db.Text
+
+  @@index([TaskNum], map: "TaskNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model tasksubscription {
+  TaskSubscriptionNum BigInt @id @default(autoincrement())
+  UserNum             BigInt
+  TaskListNum         BigInt
+  TaskNum             BigInt
+
+  @@index([TaskListNum], map: "TaskListNum")
+  @@index([TaskNum], map: "TaskNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+model taskunread {
+  TaskUnreadNum BigInt @id @default(autoincrement())
+  TaskNum       BigInt
+  UserNum       BigInt
+
+  @@index([TaskNum], map: "TaskNum")
+  @@index([UserNum], map: "UserNum")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model temppatient_bak_address {
+  patnum  BigInt  @default(0)
+  address String? @default("") @db.VarChar(100)
+
+  @@ignore
+}
+
+model terminalactive {
+  TerminalActiveNum BigInt  @id @default(autoincrement())
+  ComputerName      String? @default("") @db.VarChar(255)
+  TerminalStatus    Int     @db.UnsignedTinyInt
+  PatNum            BigInt
+  SessionId         Int
+  ProcessId         Int
+  SessionName       String  @db.VarChar(255)
+}
+
+model timeadjust {
+  TimeAdjustNum          BigInt   @id @default(autoincrement())
+  EmployeeNum            BigInt
+  TimeEntry              DateTime @default(dbgenerated("('0001-01-01 00:00:00')")) @db.DateTime(0)
+  RegHours               DateTime @default(dbgenerated("('00:00:00')")) @db.Time(0)
+  OTimeHours             DateTime @default(dbgenerated("('00:00:00')")) @db.Time(0)
+  Note                   String?  @db.Text
+  IsAuto                 Int      @db.TinyInt
+  ClinicNum              BigInt
+  PtoDefNum              BigInt   @default(0)
+  PtoHours               DateTime @default(dbgenerated("('00:00:00')")) @db.Time(0)
+  IsUnpaidProtectedLeave Int      @default(0) @db.TinyInt
+  SecuUserNumEntry       BigInt   @default(0)
+
+  @@index([ClinicNum], map: "ClinicNum")
+  @@index([PtoDefNum], map: "PtoDefNum")
+  @@index([SecuUserNumEntry], map: "SecuUserNumEntry")
+  @@index([EmployeeNum], map: "indexEmployeeNum")
+}
+
+model timecardrule {
+  TimeCardRuleNum  BigInt   @id @default(autoincrement())
+  EmployeeNum      BigInt
+  OverHoursPerDay  DateTime @db.Time(0)
+  AfterTimeOfDay   DateTime @db.Time(0)
+  BeforeTimeOfDay  DateTime @db.Time(0)
+  IsOvertimeExempt Int      @db.TinyInt
+  MinClockInTime   DateTime @db.Time(0)
+  HasWeekendRate3  Int      @db.TinyInt
+
+  @@index([EmployeeNum], map: "EmployeeNum")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tmpappt {
+  aptnum      BigInt  @default(0)
+  patnum      BigInt? @db.UnsignedBigInt
+  aptdatetime String? @db.VarChar(50)
+  op          BigInt  @default(0)
+  status      BigInt? @db.UnsignedBigInt
+
+  @@index([aptnum], map: "IDX_TMPAPPT_APTNUM")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tmpclaim_bak_conv {
+  ClaimNum                       BigInt   @default(0)
+  PatNum                         BigInt
+  DateService                    DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateSent                       DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  ClaimStatus                    String?  @default("") @db.Char(1)
+  DateReceived                   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  PlanNum                        BigInt
+  ProvTreat                      BigInt
+  ClaimFee                       Float    @default(0)
+  InsPayEst                      Float    @default(0)
+  InsPayAmt                      Float    @default(0)
+  DedApplied                     Float    @default(0)
+  PreAuthString                  String?  @default("") @db.VarChar(40)
+  IsProsthesis                   String?  @default("") @db.Char(1)
+  PriorDate                      DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  ReasonUnderPaid                String?  @default("") @db.VarChar(255)
+  ClaimNote                      String?  @db.VarChar(400)
+  ClaimType                      String?  @default("") @db.VarChar(255)
+  ProvBill                       BigInt
+  ReferringProv                  BigInt
+  RefNumString                   String?  @default("") @db.VarChar(40)
+  PlaceService                   Int      @default(0) @db.UnsignedTinyInt
+  AccidentRelated                String?  @default("") @db.Char(1)
+  AccidentDate                   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  AccidentST                     String?  @default("") @db.VarChar(2)
+  EmployRelated                  Int      @default(0) @db.UnsignedTinyInt
+  IsOrtho                        Boolean  @default(false)
+  OrthoRemainM                   Int      @default(0) @db.UnsignedTinyInt
+  OrthoDate                      DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  PatRelat                       Int      @default(0) @db.UnsignedTinyInt
+  PlanNum2                       BigInt
+  PatRelat2                      Int      @default(0) @db.UnsignedTinyInt
+  WriteOff                       Float    @default(0)
+  Radiographs                    Int      @default(0) @db.UnsignedTinyInt
+  ClinicNum                      BigInt
+  ClaimForm                      BigInt
+  AttachedImages                 Int
+  AttachedModels                 Int
+  AttachedFlags                  String?  @db.VarChar(255)
+  AttachmentID                   String?  @db.VarChar(255)
+  CanadianMaterialsForwarded     String   @db.VarChar(10)
+  CanadianReferralProviderNum    String   @db.VarChar(20)
+  CanadianReferralReason         Int      @db.TinyInt
+  CanadianIsInitialLower         String   @db.VarChar(5)
+  CanadianDateInitialLower       DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  CanadianMandProsthMaterial     Int      @db.TinyInt
+  CanadianIsInitialUpper         String   @db.VarChar(5)
+  CanadianDateInitialUpper       DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  CanadianMaxProsthMaterial      Int      @db.TinyInt
+  InsSubNum                      BigInt
+  InsSubNum2                     BigInt
+  CanadaTransRefNum              String   @db.VarChar(255)
+  CanadaEstTreatStartDate        DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  CanadaInitialPayment           Float
+  CanadaPaymentMode              Int      @db.UnsignedTinyInt
+  CanadaTreatDuration            Int      @db.UnsignedTinyInt
+  CanadaNumAnticipatedPayments   Int      @db.UnsignedTinyInt
+  CanadaAnticipatedPayAmount     Float
+  PriorAuthorizationNumber       String   @db.VarChar(255)
+  SpecialProgramCode             Int      @db.TinyInt
+  UniformBillType                String   @db.VarChar(255)
+  MedType                        Int      @db.TinyInt
+  AdmissionTypeCode              String   @db.VarChar(255)
+  AdmissionSourceCode            String   @db.VarChar(255)
+  PatientStatusCode              String   @db.VarChar(255)
+  CustomTracking                 BigInt
+  DateResent                     DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  CorrectionType                 Int      @db.TinyInt
+  ClaimIdentifier                String   @db.VarChar(255)
+  OrigRefNum                     String   @db.VarChar(255)
+  ProvOrderOverride              BigInt
+  OrthoTotalM                    Int      @db.UnsignedTinyInt
+  ShareOfCost                    Float
+  SecUserNumEntry                BigInt
+  SecDateEntry                   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  SecDateTEdit                   DateTime @default(now()) @db.Timestamp(0)
+  OrderingReferralNum            BigInt
+  DateSentOrig                   DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateIllnessInjuryPreg          DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateIllnessInjuryPregQualifier Int      @db.SmallInt
+  DateOther                      DateTime @default(dbgenerated("('0001-01-01')")) @db.Date
+  DateOtherQualifier             Int      @db.SmallInt
+  IsOutsideLab                   Int      @db.TinyInt
+  SecurityHash                   String   @db.VarChar(255)
+  Narrative                      String   @db.Text
+
+  @@ignore
 }

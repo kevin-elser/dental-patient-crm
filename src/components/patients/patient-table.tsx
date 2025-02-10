@@ -1,6 +1,9 @@
+'use client'
+
 import { useState } from 'react'
 import {
   Table,
+
   TableBody,
   TableCell,
   TableHead,
@@ -15,7 +18,7 @@ import { PatientInitials } from "./patient-initials"
 
 // Types based on the original schema
 type Patient = {
-  PatNum: number
+  PatNum: string
   LName: string | null
   FName: string | null
   Birthdate: Date

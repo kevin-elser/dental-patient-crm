@@ -24,16 +24,14 @@ export default {
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
   			},
-        patient: {
-          "1": "#f64747",
-          "2": "#00aa00",
-          "3": "#7462e0",
-          "4": "#ff00ff",
-          "5": "#5e50b5",
-          "6": "#ffa500",
-          "7": "#db0a5b",
-          "8": "#3a539b"
-        },
+        'patient-1': '#f64747',
+        'patient-2': '#00aa00',
+        'patient-3': '#7462e0',
+        'patient-4': '#ff00ff',
+        'patient-5': '#5e50b5',
+        'patient-6': '#ffa500',
+        'patient-7': '#db0a5b',
+        'patient-8': '#3a539b',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

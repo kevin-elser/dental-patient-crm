@@ -1,17 +1,35 @@
 import { PatientTable } from "@/components/patients/patient-table"
-import type { Patient } from "@/types/patient"
+import prisma from "@/lib/prisma"
 import { Suspense } from "react"
 
 async function PatientList() {
-  // TODO: Once Prisma is set up, fetch patients here
-  // const patients = await prisma.patient.findMany({
-  //   orderBy: { LName: 'asc' }
-  // })
-  
-  // Temporary empty array until database is ready
-  const patients: Patient[] = []
+  // Debug: First check if we can get any patients at all
+  const count = await prisma.patient.count()
+  console.log('Total patients in database:', count)
 
-  return <PatientTable patients={patients} />
+  const patients = await prisma.patient.findMany({
+    orderBy: { LName: 'asc' },
+    select: {
+      PatNum: true,
+      LName: true,
+      FName: true,
+      Birthdate: true,
+      HmPhone: true,
+      WkPhone: true,
+      WirelessPhone: true,
+      Email: true,
+      PatStatus: true,
+      colorIndex: true
+    }
+  })
+
+  // Convert BigInt to string for serialization
+  const serializedPatients = patients.map(patient => ({
+    ...patient,
+    PatNum: patient.PatNum.toString()
+  }))
+
+  return <PatientTable patients={serializedPatients} />
 }
 
 export default function PatientListPage() {

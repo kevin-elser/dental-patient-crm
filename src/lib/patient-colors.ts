@@ -1,15 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 
-/** To add to the schema after regenerating:
- * model Patient {
-  colorIndex Int @default(1) 
-}
- */
-
 export const NUM_COLORS = 8
 
 export type PatientWithColor = {
-  id: string
+  PatNum: bigint
   LName: string | null
   colorIndex: number
 }
@@ -29,38 +23,38 @@ export function getNonConflictingColor(usedColors: number[]): number {
  */
 export async function assignColorToNewPatient(
   prisma: PrismaClient,
-  newPatientId: string,
-  newPatientLastName: string
+  newPatientPatNum: bigint,
+  newPatientLastName: string | null
 ) {
   // Get the patients immediately before and after the new patient
   const adjacentPatients = await prisma.patient.findMany({
     where: {
       AND: [
-        { id: { not: newPatientId } },
+        { PatNum: { not: newPatientPatNum } },
         {
           OR: [
             // Get patient with next highest last name
-            { LName: { gt: newPatientLastName } },
+            { LName: { gt: newPatientLastName || '' } },
             // Get patient with next lowest last name
-            { LName: { lt: newPatientLastName } }
+            { LName: { lt: newPatientLastName || '' } }
           ]
         }
       ]
     },
     orderBy: { LName: 'asc' },
-    select: { id: true, LName: true, colorIndex: true },
+    select: { PatNum: true, LName: true, colorIndex: true },
     take: 2 // We only need the immediate neighbors
   })
 
   // Get colors to avoid (colors of adjacent patients)
-  const colorsToAvoid = adjacentPatients.map((p: PatientWithColor) => p.colorIndex)
+  const colorsToAvoid = adjacentPatients.map(p => p.colorIndex)
   
   // Assign a color that doesn't conflict
   const newColor = getNonConflictingColor(colorsToAvoid)
 
   // Update only the new patient
   await prisma.patient.update({
-    where: { id: newPatientId },
+    where: { PatNum: newPatientPatNum },
     data: { colorIndex: newColor }
   })
 }
@@ -70,20 +64,20 @@ export async function assignColorToNewPatient(
  */
 export async function updateColorsAfterRemoval(
   prisma: PrismaClient,
-  removedPatientLastName: string
+  removedPatientLastName: string | null
 ) {
   // Get the patients that will become adjacent after removal
   const newlyAdjacentPatients = await prisma.patient.findMany({
     where: {
       OR: [
         // Get patient with next highest last name
-        { LName: { gt: removedPatientLastName } },
+        { LName: { gt: removedPatientLastName || '' } },
         // Get patient with next lowest last name
-        { LName: { lt: removedPatientLastName } }
+        { LName: { lt: removedPatientLastName || '' } }
       ]
     },
     orderBy: { LName: 'asc' },
-    select: { id: true, LName: true, colorIndex: true },
+    select: { PatNum: true, LName: true, colorIndex: true },
     take: 2 // We only need the immediate neighbors
   })
 
@@ -93,7 +87,7 @@ export async function updateColorsAfterRemoval(
     
     // Get the patient before the first of our pair to check its color
     const previousPatient = await prisma.patient.findFirst({
-      where: { LName: { lt: newlyAdjacentPatients[0].LName } },
+      where: { LName: { lt: newlyAdjacentPatients[0].LName || '' } },
       orderBy: { LName: 'desc' },
       select: { colorIndex: true }
     })
@@ -101,13 +95,13 @@ export async function updateColorsAfterRemoval(
     const colorsToAvoid = [
       newlyAdjacentPatients[1].colorIndex,
       previousPatient?.colorIndex
-    ].filter(Boolean)
+    ].filter((color): color is number => typeof color === 'number')
 
     const newColor = getNonConflictingColor(colorsToAvoid)
 
     // Update only the first patient of the pair
     await prisma.patient.update({
-      where: { id: newlyAdjacentPatients[0].id },
+      where: { PatNum: newlyAdjacentPatients[0].PatNum },
       data: { colorIndex: newColor }
     })
   }

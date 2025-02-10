@@ -1,9 +1,9 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 import { getNonConflictingColor } from './patient-colors'
 
 type PatientWithColor = {
-  id: string
-  LName: string
+  PatNum: bigint
+  LName: string | null
   colorIndex: number
 }
 
@@ -15,10 +15,10 @@ export async function bulkAssignPatientColors(prisma: PrismaClient) {
   // Get all patients ordered by last name
   const patients = await prisma.patient.findMany({
     orderBy: { LName: 'asc' },
-    select: { id: true, LName: true, colorIndex: true }
+    select: { PatNum: true, LName: true, colorIndex: true }
   })
 
-  // Process in chunks to avoid memory issues with large datasets
+  // Process in chunks to avoid memory issues
   const CHUNK_SIZE = 1000
   const updates: Promise<any>[] = []
 
@@ -31,7 +31,7 @@ export async function bulkAssignPatientColors(prisma: PrismaClient) {
     const colorsToAvoid = [
       prevPatient?.colorIndex,
       nextPatient?.colorIndex
-    ].filter(Boolean)
+    ].filter((color): color is number => typeof color === 'number')
 
     const newColor = getNonConflictingColor(colorsToAvoid)
 
@@ -39,7 +39,7 @@ export async function bulkAssignPatientColors(prisma: PrismaClient) {
     if (currentPatient.colorIndex !== newColor) {
       updates.push(
         prisma.patient.update({
-          where: { id: currentPatient.id },
+          where: { PatNum: currentPatient.PatNum },
           data: { colorIndex: newColor }
         })
       )
@@ -76,26 +76,26 @@ export function addPatientColorMiddleware(prisma: PrismaClient) {
           const adjacentPatients = await prisma.patient.findMany({
             where: {
               AND: [
-                { id: { not: result.id } },
+                { PatNum: { not: result.PatNum } },
                 {
                   OR: [
-                    { LName: { gt: result.LName } },
-                    { LName: { lt: result.LName } }
+                    { LName: { gt: result.LName || '' } },
+                    { LName: { lt: result.LName || '' } }
                   ]
                 }
               ]
             },
             orderBy: { LName: 'asc' },
-            select: { id: true, LName: true, colorIndex: true },
+            select: { PatNum: true, LName: true, colorIndex: true },
             take: 2
-          })
+          }) as PatientWithColor[]
 
-          const colorsToAvoid = adjacentPatients.map((p: PatientWithColor) => p.colorIndex)
+          const colorsToAvoid = adjacentPatients.map(p => p.colorIndex)
           const newColor = getNonConflictingColor(colorsToAvoid)
 
           // Update with the new color
           return prisma.patient.update({
-            where: { id: result.id },
+            where: { PatNum: result.PatNum },
             data: { colorIndex: newColor }
           })
         }
@@ -114,18 +114,13 @@ export function addPatientColorMiddleware(prisma: PrismaClient) {
           // Get patients that will become adjacent
           const newlyAdjacentPatients = await prisma.patient.findMany({
             where: {
-              AND: [
-                params.args.where, // Exclude the patient being deleted
-                {
-                  OR: [
-                    { LName: { gt: patientToDelete.LName } },
-                    { LName: { lt: patientToDelete.LName } }
-                  ]
-                }
+              OR: [
+                { LName: { gt: patientToDelete.LName || '' } },
+                { LName: { lt: patientToDelete.LName || '' } }
               ]
             },
             orderBy: { LName: 'asc' },
-            select: { id: true, LName: true, colorIndex: true },
+            select: { PatNum: true, LName: true, colorIndex: true },
             take: 2
           }) as PatientWithColor[]
 
@@ -138,7 +133,7 @@ export function addPatientColorMiddleware(prisma: PrismaClient) {
             
             // Get the patient before our first patient
             const previousPatient = await prisma.patient.findFirst({
-              where: { LName: { lt: newlyAdjacentPatients[0].LName } },
+              where: { LName: { lt: newlyAdjacentPatients[0].LName || '' } },
               orderBy: { LName: 'desc' },
               select: { colorIndex: true }
             })
@@ -146,12 +141,12 @@ export function addPatientColorMiddleware(prisma: PrismaClient) {
             const colorsToAvoid = [
               newlyAdjacentPatients[1].colorIndex,
               previousPatient?.colorIndex
-            ].filter(Boolean)
+            ].filter((color): color is number => typeof color === 'number')
 
             const newColor = getNonConflictingColor(colorsToAvoid)
 
             await prisma.patient.update({
-              where: { id: newlyAdjacentPatients[0].id },
+              where: { PatNum: newlyAdjacentPatients[0].PatNum },
               data: { colorIndex: newColor }
             })
           }
@@ -171,17 +166,17 @@ export function addPatientColorMiddleware(prisma: PrismaClient) {
           const adjacentPatients = await prisma.patient.findMany({
             where: {
               AND: [
-                { id: { not: result.id } },
+                { PatNum: { not: result.PatNum } },
                 {
                   OR: [
-                    { LName: { gt: result.LName } },
-                    { LName: { lt: result.LName } }
+                    { LName: { gt: result.LName || '' } },
+                    { LName: { lt: result.LName || '' } }
                   ]
                 }
               ]
             },
             orderBy: { LName: 'asc' },
-            select: { id: true, LName: true, colorIndex: true },
+            select: { PatNum: true, LName: true, colorIndex: true },
             take: 2
           }) as PatientWithColor[]
 
@@ -191,7 +186,7 @@ export function addPatientColorMiddleware(prisma: PrismaClient) {
             const newColor = getNonConflictingColor(colorsToAvoid)
 
             return prisma.patient.update({
-              where: { id: result.id },
+              where: { PatNum: result.PatNum },
               data: { colorIndex: newColor }
             })
           }

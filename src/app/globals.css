@@ -9,13 +9,21 @@ body {
 @layer base {
   :root {
     --patient-1: 0 91% 62%;
-    --patient-2: 120 100% 33%;
-    --patient-3: 249 67% 63%;
+    --patient-2: 120 73% 58%;
+    --patient-3: 249 67% 69%;
     --patient-4: 300 100% 50%;
-    --patient-5: 248 41% 51%;
+    --patient-5: 215 52% 63%;
     --patient-6: 39 100% 50%;
-    --patient-7: 337 91% 45%;
-    --patient-8: 225 46% 42%;
+    --patient-7: 337 91% 66%;
+    --patient-8: 225 46% 62%;
+    --patient-i1: 0 91% 6%;
+    --patient-i2: 120 73% 10%;
+    --patient-i3: 249 67% 9%;
+    --patient-i4: 300 100% 10%;
+    --patient-i5: 215 52% 12%;
+    --patient-i6: 39 100% 10%;
+    --patient-i7: 337 91% 12%;
+    --patient-i8: 225 46% 13%;
     --background: 0 0% 100%;
     --foreground: 240 6% 16.3%;
     --card: 0 0% 100%;

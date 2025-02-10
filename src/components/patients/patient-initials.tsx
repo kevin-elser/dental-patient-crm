@@ -7,10 +7,10 @@ type PatientInitialsProps = {
   className?: string
 }
 
-const getInitials = (firstName: string | null, lastName: string | null) => {
-  const first = firstName?.charAt(0) || ''
-  const last = lastName?.charAt(0) || ''
-  return (first + last).toUpperCase()
+function getInitials(firstName: string | null, lastName: string | null) {
+  const firstInitial = firstName?.[0] || ''
+  const lastInitial = lastName?.[0] || ''
+  return `${firstInitial}${lastInitial}`.toUpperCase()
 }
 
 export function PatientInitials({ 
@@ -19,17 +19,24 @@ export function PatientInitials({
   colorIndex,
   className 
 }: PatientInitialsProps) {
-  const bgColorClass = `bg-patient-${((colorIndex - 1) % 8) + 1}`
-  
+  const normalizedIndex = ((colorIndex - 1) % 8) + 1
+
   return (
     <div 
       className={cn(
         "flex h-10 w-10 items-center justify-center rounded-full",
-        bgColorClass,
         className
       )}
+      style={{
+        backgroundColor: `hsl(var(--patient-${normalizedIndex}))`,
+      }}
     >
-      <span className="text-sm font-bold text-white">
+      <span 
+        className="text-sm font-bold"
+        style={{
+          color: `hsl(var(--patient-i${normalizedIndex}))`
+        }}
+      >
         {getInitials(firstName, lastName)}
       </span>
     </div>

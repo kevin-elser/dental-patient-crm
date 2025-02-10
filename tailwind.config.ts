@@ -23,16 +23,6 @@ export default {
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
   			},
-        patient: {
-          1: "hsl(var(--patient-1))",
-          2: "hsl(var(--patient-2))",
-          3: "hsl(var(--patient-3))",
-          4: "hsl(var(--patient-4))",
-          5: "hsl(var(--patient-5))",
-          6: "hsl(var(--patient-6))",
-          7: "hsl(var(--patient-7))",
-          8: "hsl(var(--patient-8))"
-        },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

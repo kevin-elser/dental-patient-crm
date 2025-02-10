@@ -29,7 +29,7 @@ export function PatientInitials({
         className
       )}
     >
-      <span className="text-sm font-medium text-black">
+      <span className="text-sm font-bold text-white">
         {getInitials(firstName, lastName)}
       </span>
     </div>

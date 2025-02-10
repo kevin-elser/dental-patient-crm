@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Table,
-
   TableBody,
   TableCell,
   TableHead,
@@ -36,14 +35,45 @@ type Patient = {
 type PatientTableProps = {
   patients: Patient[]
   isLoading?: boolean
+  totalCount: number
 }
 
 export function PatientTable({ 
   patients: initialPatients,
-  isLoading = false 
+  isLoading = false,
+  totalCount
 }: PatientTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [patients, setPatients] = useState(initialPatients)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const observerTarget = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore && patients.length < totalCount) {
+          setIsLoadingMore(true)
+          try {
+            const lastPatient = patients[patients.length - 1]
+            const response = await fetch(`/api/patients?cursor=${lastPatient.PatNum}&search=${searchQuery}`)
+            const newPatients = await response.json()
+            setPatients(prev => [...prev, ...newPatients])
+          } catch (error) {
+            console.error('Error loading more patients:', error)
+          } finally {
+            setIsLoadingMore(false)
+          }
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
+    }
+
+    return () => observer.disconnect()
+  }, [patients, isLoadingMore, totalCount, searchQuery])
 
   // Filter patients based on search query
   const filteredPatients = patients.filter((patient) => {
@@ -159,6 +189,16 @@ export function PatientTable({
           </TableBody>
         </Table>
       </div>
+      
+      {/* Infinite scroll observer target */}
+      <div ref={observerTarget} className="h-4" />
+      
+      {/* Loading more indicator */}
+      {isLoadingMore && (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+        </div>
+      )}
     </div>
   )
 } 

@@ -3,7 +3,6 @@ import type { Config } from "tailwindcss";
 export default {
     darkMode: ["class"],
     content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
@@ -24,14 +23,16 @@ export default {
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
   			},
-        'patient-1': '#f64747',
-        'patient-2': '#00aa00',
-        'patient-3': '#7462e0',
-        'patient-4': '#ff00ff',
-        'patient-5': '#5e50b5',
-        'patient-6': '#ffa500',
-        'patient-7': '#db0a5b',
-        'patient-8': '#3a539b',
+        patient: {
+          1: "hsl(var(--patient-1))",
+          2: "hsl(var(--patient-2))",
+          3: "hsl(var(--patient-3))",
+          4: "hsl(var(--patient-4))",
+          5: "hsl(var(--patient-5))",
+          6: "hsl(var(--patient-6))",
+          7: "hsl(var(--patient-7))",
+          8: "hsl(var(--patient-8))"
+        },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

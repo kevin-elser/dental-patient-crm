@@ -3,12 +3,11 @@ import prisma from "@/lib/prisma"
 import { Suspense } from "react"
 
 async function PatientList() {
-  // Debug: First check if we can get any patients at all
   const count = await prisma.patient.count()
-  console.log('Total patients in database:', count)
 
   const patients = await prisma.patient.findMany({
     orderBy: { LName: 'asc' },
+    take: 100,
     select: {
       PatNum: true,
       LName: true,
@@ -29,7 +28,7 @@ async function PatientList() {
     PatNum: patient.PatNum.toString()
   }))
 
-  return <PatientTable patients={serializedPatients} />
+  return <PatientTable patients={serializedPatients} totalCount={count} />
 }
 
 export default function PatientListPage() {

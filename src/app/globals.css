@@ -8,6 +8,14 @@ body {
 
 @layer base {
   :root {
+    --patient-1: 0 91% 62%;
+    --patient-2: 120 100% 33%;
+    --patient-3: 249 67% 63%;
+    --patient-4: 300 100% 50%;
+    --patient-5: 248 41% 51%;
+    --patient-6: 39 100% 50%;
+    --patient-7: 337 91% 45%;
+    --patient-8: 225 46% 42%;
     --background: 0 0% 100%;
     --foreground: 240 6% 16.3%;
     --card: 0 0% 100%;

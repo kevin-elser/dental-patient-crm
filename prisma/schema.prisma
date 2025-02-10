@@ -2,6 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator patientColors {
+  provider = "ts-node --transpile-only ./prisma/color-generator.ts"
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")

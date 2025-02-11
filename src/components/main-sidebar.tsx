@@ -71,7 +71,6 @@ const ROUTE_CONFIG = {
     defaultSubmenu: "patient-list",
     submenuItems: {
       "patient-list": "/patients/list",
-      "add-patient": "/patients/add",
       "patient-groups": "/patients/groups",
     },
     icon: <Users />,

@@ -3,55 +3,81 @@ import { PrismaClient as AppPrismaClient } from '../../prisma/generated/app-clie
 import { getNonConflictingColor } from './patient-colors'
 
 /**
- * Gets colors of patients with the same last name and adjacent last names
+ * Gets colors of immediately adjacent patients in the sorted list
  */
-async function getAdjacentPatientColors(
+async function getVisuallyAdjacentColors(
   prisma: MainPrismaClient,
   appPrisma: AppPrismaClient,
-  patientId: bigint,
-  lastName: string | null
+  patientId: bigint
 ): Promise<number[]> {
-  if (!lastName) return [];
-  
-  // Get all patients with the same last name (except current patient)
-  const sameLastNamePatients = await prisma.patient.findMany({
-    where: {
-      AND: [
-        { LName: lastName },
-        { PatNum: { not: patientId } }
-      ]
-    },
-    select: { PatNum: true }
+  // Get the current patient to find neighbors
+  const currentPatient = await prisma.patient.findUnique({
+    where: { PatNum: patientId },
+    select: { LName: true, FName: true }
   });
+  
+  if (!currentPatient?.LName || !currentPatient?.FName) return [];
 
-  // Get the next and previous different last names
-  const [prevDifferentLastName, nextDifferentLastName] = await Promise.all([
+  // Find the patient immediately before and after in sorted order
+  const [previousPatient, nextPatient] = await Promise.all([
     prisma.patient.findFirst({
-      where: { LName: { lt: lastName } },
-      orderBy: { LName: 'desc' },
+      where: {
+        OR: [
+          // Same last name, earlier first name
+          {
+            AND: [
+              { LName: currentPatient.LName },
+              { FName: { lt: currentPatient.FName } }
+            ]
+          },
+          // Earlier last name
+          { LName: { lt: currentPatient.LName } }
+        ],
+        PatNum: { not: patientId }  // Exclude current patient
+      },
+      orderBy: [
+        { LName: 'desc' },
+        { FName: 'desc' },
+        { PatNum: 'desc' }  // Tiebreaker for identical names
+      ],
       select: { PatNum: true }
     }),
     prisma.patient.findFirst({
-      where: { LName: { gt: lastName } },
-      orderBy: { LName: 'asc' },
+      where: {
+        OR: [
+          // Same last name, later first name
+          {
+            AND: [
+              { LName: currentPatient.LName },
+              { FName: { gt: currentPatient.FName } }
+            ]
+          },
+          // Later last name
+          { LName: { gt: currentPatient.LName } }
+        ],
+        PatNum: { not: patientId }  // Exclude current patient
+      },
+      orderBy: [
+        { LName: 'asc' },
+        { FName: 'asc' },
+        { PatNum: 'asc' }  // Tiebreaker for identical names
+      ],
       select: { PatNum: true }
     })
   ]);
 
-  // Get color references for all relevant patients
-  const patientIds = [
-    ...sameLastNamePatients.map(p => p.PatNum),
-    prevDifferentLastName?.PatNum,
-    nextDifferentLastName?.PatNum
-  ].filter((id): id is bigint => id !== undefined && id !== null);
+  // Get colors of adjacent patients
+  const adjacentPatientIds = [previousPatient?.PatNum, nextPatient?.PatNum].filter((id): id is bigint => !!id);
+  
+  if (adjacentPatientIds.length === 0) return [];
 
-  const colorRefs = await appPrisma.patientReference.findMany({
+  const adjacentRefs = await appPrisma.patientReference.findMany({
     where: {
-      patientId: { in: patientIds }
+      patientId: { in: adjacentPatientIds }
     }
   });
 
-  return colorRefs.map(ref => ref.colorIndex);
+  return adjacentRefs.map(ref => ref.colorIndex);
 }
 
 /**
@@ -71,7 +97,7 @@ export async function bulkAssignPatientColors(prisma: MainPrismaClient, appPrism
       { LName: 'asc' },
       { FName: 'asc' }
     ],
-    select: { PatNum: true, LName: true }
+    select: { PatNum: true, LName: true, FName: true }
   });
 
   console.log(`Found ${patients.length} patients to process`);
@@ -80,12 +106,11 @@ export async function bulkAssignPatientColors(prisma: MainPrismaClient, appPrism
   for (let i = 0; i < patients.length; i++) {
     const currentPatient = patients[i];
     
-    // Get colors to avoid from same-name and adjacent patients
-    const colorsToAvoid = await getAdjacentPatientColors(
+    // Get colors to avoid from visually adjacent patients
+    const colorsToAvoid = await getVisuallyAdjacentColors(
       prisma,
       appPrisma,
-      currentPatient.PatNum,
-      currentPatient.LName
+      currentPatient.PatNum
     );
 
     const newColor = getNonConflictingColor(colorsToAvoid);
@@ -124,19 +149,18 @@ export const patientColorExtension = (appPrisma: AppPrismaClient) => {
             return result;
           }
 
-          // Get the patient's last name from the main database
-          const mainPatient = await appPrisma.$queryRaw<{ LName: string }[]>`
-            SELECT LName FROM patient WHERE PatNum = ${result.patientId}
+          // Get the patient's info from the main database
+          const mainPatient = await appPrisma.$queryRaw<{ LName: string, FName: string }[]>`
+            SELECT LName, FName FROM patient WHERE PatNum = ${result.patientId}
           `;
 
           if (!mainPatient.length) return result;
 
-          // Get colors to avoid from same-name and adjacent patients
-          const colorsToAvoid = await getAdjacentPatientColors(
-            appPrisma as unknown as MainPrismaClient, // Type cast needed since we're using raw queries
+          // Get colors to avoid from visually adjacent patients
+          const colorsToAvoid = await getVisuallyAdjacentColors(
+            appPrisma as unknown as MainPrismaClient,
             appPrisma,
-            result.patientId, // Now safe since we checked it exists
-            mainPatient[0].LName
+            result.patientId
           );
 
           const newColor = getNonConflictingColor(colorsToAvoid);

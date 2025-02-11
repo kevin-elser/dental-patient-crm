@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, tags } = body;
+    const { name, description, tags, patientIds } = body;
 
     // Validate name length
     if (name.length > 16) {
@@ -36,12 +36,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const group = await appPrisma.patientGroup.create({
-      data: {
-        name,
-        description,
-        tags: tags ? JSON.stringify(tags) : null
+    // Create group and patient references in a transaction
+    const group = await appPrisma.$transaction(async (tx) => {
+      // Create the group first
+      const newGroup = await tx.patientGroup.create({
+        data: {
+          name,
+          description,
+          tags: tags ? JSON.stringify(tags) : null,
+        }
+      });
+
+      // If we have patient IDs, connect them to the group
+      if (patientIds?.length > 0) {
+        // First, ensure all patient references exist
+        await tx.patientReference.createMany({
+          data: patientIds.map((patientId: string) => ({
+            patientId: BigInt(patientId),
+            colorIndex: 1, // Default color
+          })),
+          skipDuplicates: true, // Skip if patient reference already exists
+        });
+
+        // Get all the patient references we just created/already existed
+        const references = await tx.patientReference.findMany({
+          where: {
+            patientId: {
+              in: patientIds.map((id: string) => BigInt(id))
+            }
+          }
+        });
+
+        // Connect the references to the group
+        await tx.patientGroup.update({
+          where: { id: newGroup.id },
+          data: {
+            patients: {
+              connect: references.map(ref => ({ id: ref.id }))
+            }
+          }
+        });
       }
+
+      // Return the group with patient count
+      return tx.patientGroup.findUnique({
+        where: { id: newGroup.id },
+        include: {
+          _count: {
+            select: { patients: true }
+          }
+        }
+      });
     });
 
     return NextResponse.json(group);

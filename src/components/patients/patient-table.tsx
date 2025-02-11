@@ -20,39 +20,46 @@ type Patient = {
   PatNum: string
   LName: string | null
   FName: string | null
-  Birthdate: Date
   HmPhone: string | null
   WkPhone: string | null
   WirelessPhone: string | null
   Email: string | null
   PatStatus: number
   colorIndex: number
-  // Future fields for tags:
-  // isActive: boolean
-  // hasBalance: boolean
 }
 
-type PatientTableProps = {
-  patients: Patient[]
-  isLoading?: boolean
-  totalCount: number
+export interface PatientTableProps {
+  patients: Patient[];
+  totalCount: number;
+  isLoading?: boolean;
+  extraHeader?: React.ReactNode;
+  extraCell?: (patient: Patient) => React.ReactNode;
+  onSearchChange?: (search: string) => void;
 }
 
-function PatientTableSkeleton() {
+function PatientTableSkeleton({ hasExtraCell = false }: { hasExtraCell?: boolean }) {
   return (
     <TableRow>
-      <TableCell>
+      {hasExtraCell && (
+        <TableCell className="w-[50px]">
+          <Skeleton className="h-4 w-4" />
+        </TableCell>
+      )}
+      <TableCell className="w-[300px]">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex flex-col gap-2">
             <Skeleton className="h-5 w-[200px]" />
-            <div className="flex gap-2">
-              <Skeleton className="h-4 w-16" />
-            </div>
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="w-[200px]">
+        <Skeleton className="h-4 w-[100px]" />
+      </TableCell>
+      <TableCell className="w-[250px]">
+        <Skeleton className="h-4 w-[150px]" />
+      </TableCell>
+      <TableCell className="w-[100px] text-right">
         <div className="flex justify-end gap-2">
           <Skeleton className="h-8 w-8" />
           <Skeleton className="h-8 w-8" />
@@ -62,78 +69,136 @@ function PatientTableSkeleton() {
   )
 }
 
-export function PatientTable({ 
+export function PatientTable({
   patients: initialPatients,
+  totalCount,
   isLoading = false,
-  totalCount
+  extraHeader,
+  extraCell,
+  onSearchChange
 }: PatientTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [patients, setPatients] = useState(initialPatients)
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([])
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const currentPageRef = useRef(0)
   const observerTarget = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Initialize with initial patients on mount
+  useEffect(() => {
+    setFilteredPatients(initialPatients)
+    setHasMore(initialPatients.length < totalCount)
+    currentPageRef.current = 0
+  }, [])  // Empty deps array to only run on mount
 
   // Reset patients and fetch new results when search query changes
   useEffect(() => {
+    if (!searchQuery) {
+      setFilteredPatients(initialPatients)
+      setHasMore(initialPatients.length < totalCount)
+      currentPageRef.current = 0
+      return
+    }
+
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
     const fetchSearchResults = async () => {
       setIsLoadingMore(true)
+      abortControllerRef.current = new AbortController()
+
       try {
-        const response = await fetch(`/api/patients?page=0&search=${searchQuery}`)
-        const newPatients = await response.json()
-        setPatients(newPatients)
+        const response = await fetch(
+          `/api/patients?page=0&search=${searchQuery}`,
+          { signal: abortControllerRef.current.signal }
+        )
+        const data = await response.json()
+        setFilteredPatients(data.patients)
+        setHasMore(data.hasMore)
         currentPageRef.current = 0
+        onSearchChange?.(searchQuery)
       } catch (error) {
-        console.error('Error searching patients:', error)
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          console.error('Error searching patients:', error)
+        }
       } finally {
         setIsLoadingMore(false)
       }
     }
 
-    // Debounce search to avoid too many requests
     const timeoutId = setTimeout(() => {
       fetchSearchResults()
     }, 300)
 
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery])
+    return () => {
+      clearTimeout(timeoutId)
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [searchQuery, initialPatients, totalCount, onSearchChange])
 
   const loadMorePatients = useCallback(async () => {
-    if (isLoadingMore) return
+    if (isLoadingMore || !hasMore) return
 
     setIsLoadingMore(true)
+    abortControllerRef.current = new AbortController()
+
     try {
       const nextPage = currentPageRef.current + 1
       const response = await fetch(
-        `/api/patients?page=${nextPage}&search=${searchQuery}`
+        `/api/patients?page=${nextPage}&search=${searchQuery}`,
+        { signal: abortControllerRef.current.signal }
       )
-      const newPatients = await response.json()
-      if (newPatients.length > 0) {
-        setPatients(prev => [...prev, ...newPatients])
+      const data = await response.json()
+      if (data.patients.length > 0) {
+        setFilteredPatients(prev => [...prev, ...data.patients])
+        setHasMore(data.hasMore)
         currentPageRef.current = nextPage
+      } else {
+        setHasMore(false)
       }
     } catch (error) {
-      console.error('Error loading more patients:', error)
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        console.error('Error loading more patients:', error)
+      }
     } finally {
       setIsLoadingMore(false)
     }
-  }, [searchQuery, isLoadingMore])
+  }, [searchQuery, isLoadingMore, hasMore])
 
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
+  // Set up intersection observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore && patients.length < totalCount) {
+        if (entries[0].isIntersecting && !isLoadingMore && hasMore) {
           loadMorePatients()
         }
       },
       { threshold: 0.1 }
     )
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current)
+    const currentTarget = observerTarget.current
+    if (currentTarget) {
+      observer.observe(currentTarget)
     }
 
-    return () => observer.disconnect()
-  }, [loadMorePatients, patients.length, totalCount])
+    return () => {
+      observer.disconnect()
+    }
+  }, [loadMorePatients, hasMore, isLoadingMore])
 
   // Get primary contact number (prioritize wireless -> home -> work)
   const getPrimaryPhone = (patient: Patient) => {
@@ -142,87 +207,94 @@ export function PatientTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <Input
           placeholder="Search patients by name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-sm"
+          className="w-full"
           disabled={isLoading}
         />
       </div>
 
       <div className="rounded-md border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
+              {extraHeader && <TableHead className="w-[50px]">{extraHeader}</TableHead>}
               <TableHead className="w-[300px]">Patient Name</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[200px]">Phone</TableHead>
+              <TableHead className="w-[250px]">Email</TableHead>
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="relative">
             {isLoading ? (
               // Initial loading skeleton rows
               Array.from({ length: 5 }).map((_, index) => (
-                <PatientTableSkeleton key={`skeleton-${index}`} />
+                <PatientTableSkeleton key={`skeleton-${index}`} hasExtraCell={!!extraCell} />
               ))
             ) : (
-              <>
-                {patients.map((patient) => {
-                  const phoneNumber = getPrimaryPhone(patient)
-                  return (
-                    <TableRow key={patient.PatNum}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <PatientInitials
-                            firstName={patient.FName}
-                            lastName={patient.LName}
-                            colorIndex={patient.colorIndex}
-                          />
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium">
-                              {`${patient.FName || ''} ${patient.LName || ''}`}
-                            </span>
-                            <div className="flex gap-2">
-                              {/* Placeholder for future tags */}
-                            </div>
-                          </div>
-                        </div>
+              filteredPatients.map((patient) => {
+                const phoneNumber = getPrimaryPhone(patient)
+                return (
+                  <TableRow key={patient.PatNum}>
+                    {extraCell && (
+                      <TableCell className="w-[50px]">
+                        {extraCell(patient)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {phoneNumber && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                title="Call patient"
-                              >
-                                <Phone className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                title="Text patient"
-                              >
-                                <MessageSquare className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
+                    )}
+                    <TableCell className="w-[300px]">
+                      <div className="flex items-center gap-3">
+                        <PatientInitials
+                          firstName={patient.FName}
+                          lastName={patient.LName}
+                          colorIndex={patient.colorIndex}
+                        />
+                        <div className="font-medium truncate">
+                          {patient.FName} {patient.LName}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-                {isLoadingMore && (
-                  // Loading more skeleton rows
-                  Array.from({ length: 10 }).map((_, index) => (
-                    <PatientTableSkeleton key={`loading-more-${index}`} />
-                  ))
-                )}
-              </>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-[200px] truncate">
+                      {phoneNumber}
+                    </TableCell>
+                    <TableCell className="w-[250px] truncate">
+                      {patient.Email}
+                    </TableCell>
+                    <TableCell className="w-[100px] text-right">
+                      <div className="flex justify-end gap-2">
+                        {phoneNumber && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Call patient"
+                            >
+                              <Phone className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Text patient"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+            {isLoadingMore && (
+              // Loading more skeleton rows
+              Array.from({ length: 10 }).map((_, index) => (
+                <PatientTableSkeleton key={`loading-more-${index}`} />
+              ))
             )}
           </TableBody>
         </Table>

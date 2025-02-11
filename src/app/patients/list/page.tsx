@@ -1,6 +1,9 @@
 import { PatientTable } from "@/components/patients/patient-table"
 import prisma, { appPrisma } from "@/lib/prisma"
 import { Suspense } from "react"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import Link from "next/link"
 
 async function PatientList() {
   const count = await prisma.patient.count()
@@ -49,7 +52,15 @@ async function PatientList() {
 export default function PatientListPage() {
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Patient List</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-semibold">Patient List</h1>
+        <Link href="/patients/groups/create">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Group
+          </Button>
+        </Link>
+      </div>
       <Suspense fallback={<PatientTable patients={[]} totalCount={0} isLoading={true} />}>
         <PatientList />
       </Suspense>

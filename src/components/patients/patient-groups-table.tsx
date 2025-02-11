@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+"use client";
+
+import { useCallback, useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -15,7 +17,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface PatientGroup {
   id: number;
@@ -29,14 +30,15 @@ interface PatientGroup {
 
 export function PatientGroupsTable() {
   const [groups, setGroups] = useState<PatientGroup[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [groupToDelete, setGroupToDelete] = useState<PatientGroup | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   const loadGroups = useCallback(async () => {
     try {
-      const response = await fetch("/api/patient-groups");
-      if (!response.ok) throw new Error("Failed to fetch groups");
+      const response = await fetch("/api/patients/groups");
+      if (!response.ok) throw new Error("Failed to load groups");
       const data = await response.json();
       setGroups(data);
     } catch (error) {
@@ -47,22 +49,27 @@ export function PatientGroupsTable() {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [toast]);
 
-  const deleteGroup = async (id: number) => {
+  const handleDeleteGroup = async () => {
+    if (!groupToDelete) return;
+
     try {
-      const response = await fetch(`/api/patient-groups?id=${id}`, {
+      const response = await fetch(`/api/patients/groups?id=${groupToDelete.id}`, {
         method: "DELETE",
       });
+
       if (!response.ok) throw new Error("Failed to delete group");
-      
-      await loadGroups();
+
       toast({
         title: "Success",
         description: "Patient group deleted successfully",
       });
+      
+      // Refresh the groups list
+      loadGroups();
     } catch (error) {
       console.error("Error deleting group:", error);
       toast({
@@ -70,15 +77,16 @@ export function PatientGroupsTable() {
         description: "Failed to delete patient group",
         variant: "destructive",
       });
+    } finally {
+      setGroupToDelete(null);
     }
   };
 
-  // Load groups on mount
-  useState(() => {
+  useEffect(() => {
     loadGroups();
-  });
+  }, [loadGroups]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="rounded-md border">
         <Table>
@@ -124,7 +132,7 @@ export function PatientGroupsTable() {
             <TableRow
               key={group.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => router.push(`/patient-groups/${group.name.toLowerCase().replace(/\s+/g, '-')}`)}
+              onClick={() => router.push(`/patients/groups/${group.name.toLowerCase().replace(/\s+/g, '-')}`)}
             >
               <TableCell className="font-medium">{group.name}</TableCell>
               <TableCell>{group.description}</TableCell>
@@ -137,42 +145,39 @@ export function PatientGroupsTable() {
               </TableCell>
               <TableCell>{group._count.patients}</TableCell>
               <TableCell>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Patient Group</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this patient group? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteGroup(group.id);
-                        }}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGroupToDelete(group);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <AlertDialog open={!!groupToDelete} onOpenChange={(open) => !open && setGroupToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Patient Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the group "{groupToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGroup}>
+              Delete Group
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 } 

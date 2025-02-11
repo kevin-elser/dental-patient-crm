@@ -1,7 +1,5 @@
 # Patient CRM Project Plan
 
-_Last Updated: 2025-02-07_
-
 ## 1. Project Overview
 
 I am developing a high-performance, user-friendly web application that functions as a Patient CRM. My goal is to streamline patient management tasks, including communication via text and email, campaign management, analytics, detailed patient records, and appointment scheduling through a calendar view.
@@ -115,8 +113,13 @@ Below is my planned roadmap with milestones:
 ### Milestone 3: Patient Management Module
 - [x] Create the patient table view with basic sorting.
 - [x] Test with extremely large datasets (100k+ patients) to ensure performance.
-- [ ] Add sublist capabilities.
-- [ ] Implement an expandable patient detail sidebar.
+- [x] Add sublist capabilities.
+- [x] Implement an expandable patient detail sidebar.
+  - [x] Fill route with data needed for the sidebar.
+  - [x] Add cards to fill the sidebar overview.
+  - [x] Fill overview with database data.
+  - [ ] Fill payment history with database data.
+  - [ ] Create notes section for individual patient.
 
 ### Milestone 4: Campaigns Module and Messaging
 - [ ] Integrate SMS and email APIs.

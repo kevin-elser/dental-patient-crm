@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
         WirelessPhone: true,
         Email: true,
         PatStatus: true,
+        Address: true,
+        Gender: true
       }
     })
 
@@ -58,8 +60,10 @@ export async function GET(request: NextRequest) {
     const serializedPatients = patients.map(patient => ({
       ...patient,
       PatNum: patient.PatNum.toString(),
-      colorIndex: colorMap.get(patient.PatNum.toString()) || 1 // Default to 1 if no color assigned
-    }))
+      Gender: patient.Gender ?? 0,
+      Address: patient.Address ?? null,
+      colorIndex: colorMap.get(patient.PatNum.toString()) || 1
+    }));
 
     return NextResponse.json({
       patients: serializedPatients,

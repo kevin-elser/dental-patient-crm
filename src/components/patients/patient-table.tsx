@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Phone, MessageSquare } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PatientInitials } from "./patient-initials"
+import { PatientDetailSidebar } from "./patient-detail-sidebar"
 
 // Types based on the original schema
 type Patient = {
@@ -26,6 +27,9 @@ type Patient = {
   Email: string | null
   PatStatus: number
   colorIndex: number
+  Gender: number
+  Birthdate: Date
+  Address: string | null
 }
 
 export interface PatientTableProps {
@@ -84,6 +88,8 @@ export function PatientTable({
   const currentPageRef = useRef(0)
   const observerTarget = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Initialize with initial patients on mount
   useEffect(() => {
@@ -238,7 +244,18 @@ export function PatientTable({
               filteredPatients.map((patient) => {
                 const phoneNumber = getPrimaryPhone(patient)
                 return (
-                  <TableRow key={patient.PatNum}>
+                  <TableRow 
+                    key={patient.PatNum}
+                    onClick={(e) => {
+                      // Only trigger if not clicking buttons
+                      const target = e.target as HTMLElement
+                      if (!target.closest('button')) {
+                        setSelectedPatient(patient)
+                        setSidebarOpen(true)
+                      }
+                    }}
+                    className="cursor-pointer"
+                  >
                     {extraCell && (
                       <TableCell className="w-[50px]">
                         {extraCell(patient)}
@@ -302,6 +319,16 @@ export function PatientTable({
       
       {/* Infinite scroll observer target */}
       <div ref={observerTarget} className="h-4" />
+
+      {/* Patient Detail Sidebar */}
+      <PatientDetailSidebar
+        patient={selectedPatient}
+        open={sidebarOpen}
+        onClose={() => {
+          setSidebarOpen(false)
+          setSelectedPatient(null)
+        }}
+      />
     </div>
   )
 } 

@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { appPrisma } from "@/lib/prisma";
 import prisma from "@/lib/prisma";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(request: NextRequest) {
+  const slug = request.nextUrl.pathname.split('/').pop();
+  
+  if (!slug) {
+    return NextResponse.json({ error: 'Group slug is required' }, { status: 400 });
+  }
+
   try {
     // Convert slug back to group name
-    const groupName = params.slug.split('-').map(word => 
+    const groupName = slug.split('-').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
 

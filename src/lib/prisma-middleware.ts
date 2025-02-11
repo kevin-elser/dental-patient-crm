@@ -1,206 +1,153 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import { PrismaClient as MainPrismaClient } from '@prisma/client'
+import { PrismaClient as AppPrismaClient } from '../../prisma/generated/app-client'
 import { getNonConflictingColor } from './patient-colors'
 
-type PatientWithColor = {
-  PatNum: bigint
-  LName: string | null
-  colorIndex: number
+/**
+ * Gets colors of patients with the same last name and adjacent last names
+ */
+async function getAdjacentPatientColors(
+  prisma: MainPrismaClient,
+  appPrisma: AppPrismaClient,
+  patientId: bigint,
+  lastName: string | null
+): Promise<number[]> {
+  if (!lastName) return [];
+  
+  // Get all patients with the same last name (except current patient)
+  const sameLastNamePatients = await prisma.patient.findMany({
+    where: {
+      AND: [
+        { LName: lastName },
+        { PatNum: { not: patientId } }
+      ]
+    },
+    select: { PatNum: true }
+  });
+
+  // Get the next and previous different last names
+  const [prevDifferentLastName, nextDifferentLastName] = await Promise.all([
+    prisma.patient.findFirst({
+      where: { LName: { lt: lastName } },
+      orderBy: { LName: 'desc' },
+      select: { PatNum: true }
+    }),
+    prisma.patient.findFirst({
+      where: { LName: { gt: lastName } },
+      orderBy: { LName: 'asc' },
+      select: { PatNum: true }
+    })
+  ]);
+
+  // Get color references for all relevant patients
+  const patientIds = [
+    ...sameLastNamePatients.map(p => p.PatNum),
+    prevDifferentLastName?.PatNum,
+    nextDifferentLastName?.PatNum
+  ].filter((id): id is bigint => id !== undefined && id !== null);
+
+  const colorRefs = await appPrisma.patientReference.findMany({
+    where: {
+      patientId: { in: patientIds }
+    }
+  });
+
+  return colorRefs.map(ref => ref.colorIndex);
 }
 
 /**
  * Assigns colors to all patients in bulk - optimized for initial database population
- * This is much faster than assigning colors one by one through middleware
  */
-export async function bulkAssignPatientColors(prisma: PrismaClient) {
-  // Get all patients ordered by last name
+export async function bulkAssignPatientColors(prisma: MainPrismaClient, appPrisma: AppPrismaClient) {
+  console.log('Starting bulk color assignment...');
+  
+  // First, clear all existing color assignments to start fresh
+  console.log('Clearing existing color assignments...');
+  await appPrisma.patientReference.deleteMany({});
+
+  // Get all patients ordered by last name and first name
+  console.log('Fetching patients...');
   const patients = await prisma.patient.findMany({
-    orderBy: { LName: 'asc' },
-    select: { PatNum: true, LName: true, colorIndex: true }
-  })
+    orderBy: [
+      { LName: 'asc' },
+      { FName: 'asc' }
+    ],
+    select: { PatNum: true, LName: true }
+  });
 
-  // Process in chunks to avoid memory issues
-  const CHUNK_SIZE = 1000
-  const updates: Promise<any>[] = []
+  console.log(`Found ${patients.length} patients to process`);
 
+  // Process sequentially to ensure color consistency
   for (let i = 0; i < patients.length; i++) {
-    const prevPatient = i > 0 ? patients[i - 1] : null
-    const currentPatient = patients[i]
-    const nextPatient = i < patients.length - 1 ? patients[i + 1] : null
+    const currentPatient = patients[i];
+    
+    // Get colors to avoid from same-name and adjacent patients
+    const colorsToAvoid = await getAdjacentPatientColors(
+      prisma,
+      appPrisma,
+      currentPatient.PatNum,
+      currentPatient.LName
+    );
 
-    // Get colors to avoid (from adjacent patients)
-    const colorsToAvoid = [
-      prevPatient?.colorIndex,
-      nextPatient?.colorIndex
-    ].filter((color): color is number => typeof color === 'number')
+    const newColor = getNonConflictingColor(colorsToAvoid);
 
-    const newColor = getNonConflictingColor(colorsToAvoid)
+    // Create the patient reference with the new color
+    await appPrisma.patientReference.create({
+      data: {
+        patientId: currentPatient.PatNum,
+        colorIndex: newColor
+      }
+    });
 
-    // Only update if color needs to change
-    if (currentPatient.colorIndex !== newColor) {
-      updates.push(
-        prisma.patient.update({
-          where: { PatNum: currentPatient.PatNum },
-          data: { colorIndex: newColor }
-        })
-      )
-    }
-
-    // Process in chunks to avoid overwhelming the database
-    if (updates.length === CHUNK_SIZE || i === patients.length - 1) {
-      await Promise.all(updates)
-      updates.length = 0
+    // Log progress every 100 patients
+    if (i % 100 === 0 || i === patients.length - 1) {
+      console.log(`Processed ${i + 1} of ${patients.length} patients (${Math.round(((i + 1) / patients.length) * 100)}%)`);
     }
   }
+
+  console.log('Bulk color assignment completed successfully!');
+  return patients.length;
 }
 
 /**
- * Adds middleware to handle patient color assignments automatically
- * Note: For initial database population, use bulkAssignPatientColors instead
- * Caching might be a viable option here if performance becomes an issue
+ * Extension for handling patient color assignments
  */
-export function addPatientColorMiddleware(prisma: PrismaClient) {
-  prisma.$use(async (params: Prisma.MiddlewareParams, next) => {
-    try {
-      // Only handle patient model operations
-      if (params.model?.toLowerCase() !== 'patient') {
-        return next(params)
-      }
-
-      // Handle different operations
-      switch (params.action) {
-        case 'create': {
+export const patientColorExtension = (appPrisma: AppPrismaClient) => {
+  return appPrisma.$extends({
+    name: 'patientColorExtension',
+    query: {
+      patientReference: {
+        async create({ args, query }) {
           // First let the creation happen
-          const result = await next(params)
+          const result = await query(args);
 
-          // Then assign the color based on adjacent patients
-          const adjacentPatients = await prisma.patient.findMany({
-            where: {
-              AND: [
-                { PatNum: { not: result.PatNum } },
-                {
-                  OR: [
-                    { LName: { gt: result.LName || '' } },
-                    { LName: { lt: result.LName || '' } }
-                  ]
-                }
-              ]
-            },
-            orderBy: { LName: 'asc' },
-            select: { PatNum: true, LName: true, colorIndex: true },
-            take: 2
-          }) as PatientWithColor[]
+          if (!result?.patientId) {
+            return result;
+          }
 
-          const colorsToAvoid = adjacentPatients.map(p => p.colorIndex)
-          const newColor = getNonConflictingColor(colorsToAvoid)
+          // Get the patient's last name from the main database
+          const mainPatient = await appPrisma.$queryRaw<{ LName: string }[]>`
+            SELECT LName FROM patient WHERE PatNum = ${result.patientId}
+          `;
+
+          if (!mainPatient.length) return result;
+
+          // Get colors to avoid from same-name and adjacent patients
+          const colorsToAvoid = await getAdjacentPatientColors(
+            appPrisma as unknown as MainPrismaClient, // Type cast needed since we're using raw queries
+            appPrisma,
+            result.patientId, // Now safe since we checked it exists
+            mainPatient[0].LName
+          );
+
+          const newColor = getNonConflictingColor(colorsToAvoid);
 
           // Update with the new color
-          return prisma.patient.update({
-            where: { PatNum: result.PatNum },
+          return appPrisma.patientReference.update({
+            where: { id: result.id },
             data: { colorIndex: newColor }
-          })
+          });
         }
-
-        case 'delete': {
-          // First get the patient being deleted
-          const patientToDelete = await prisma.patient.findUnique({
-            where: params.args.where,
-            select: { LName: true }
-          })
-
-          if (!patientToDelete) {
-            throw new Error('Patient not found')
-          }
-
-          // Get patients that will become adjacent
-          const newlyAdjacentPatients = await prisma.patient.findMany({
-            where: {
-              OR: [
-                { LName: { gt: patientToDelete.LName || '' } },
-                { LName: { lt: patientToDelete.LName || '' } }
-              ]
-            },
-            orderBy: { LName: 'asc' },
-            select: { PatNum: true, LName: true, colorIndex: true },
-            take: 2
-          }) as PatientWithColor[]
-
-          // Perform the deletion
-          const result = await next(params)
-
-          // If the newly adjacent patients share a color, update the first one
-          if (newlyAdjacentPatients.length === 2 && 
-              newlyAdjacentPatients[0].colorIndex === newlyAdjacentPatients[1].colorIndex) {
-            
-            // Get the patient before our first patient
-            const previousPatient = await prisma.patient.findFirst({
-              where: { LName: { lt: newlyAdjacentPatients[0].LName || '' } },
-              orderBy: { LName: 'desc' },
-              select: { colorIndex: true }
-            })
-
-            const colorsToAvoid = [
-              newlyAdjacentPatients[1].colorIndex,
-              previousPatient?.colorIndex
-            ].filter((color): color is number => typeof color === 'number')
-
-            const newColor = getNonConflictingColor(colorsToAvoid)
-
-            await prisma.patient.update({
-              where: { PatNum: newlyAdjacentPatients[0].PatNum },
-              data: { colorIndex: newColor }
-            })
-          }
-
-          return result
-        }
-
-        case 'update': {
-          // Only handle color conflicts if the last name is being updated
-          if (!params.args.data.LName) {
-            return next(params)
-          }
-
-          const result = await next(params)
-
-          // Check for conflicts with new adjacent patients
-          const adjacentPatients = await prisma.patient.findMany({
-            where: {
-              AND: [
-                { PatNum: { not: result.PatNum } },
-                {
-                  OR: [
-                    { LName: { gt: result.LName || '' } },
-                    { LName: { lt: result.LName || '' } }
-                  ]
-                }
-              ]
-            },
-            orderBy: { LName: 'asc' },
-            select: { PatNum: true, LName: true, colorIndex: true },
-            take: 2
-          }) as PatientWithColor[]
-
-          // If either adjacent patient shares our color, get a new one
-          if (adjacentPatients.some((p: PatientWithColor) => p.colorIndex === result.colorIndex)) {
-            const colorsToAvoid = adjacentPatients.map((p: PatientWithColor) => p.colorIndex)
-            const newColor = getNonConflictingColor(colorsToAvoid)
-
-            return prisma.patient.update({
-              where: { PatNum: result.PatNum },
-              data: { colorIndex: newColor }
-            })
-          }
-
-          return result
-        }
-
-        default:
-          return next(params)
       }
-    } catch (error) {
-      console.error('Error in patient color middleware:', error)
-      // Still allow the operation to proceed even if color assignment fails
-      return next(params)
     }
-  })
-} 
+  });
+}; 

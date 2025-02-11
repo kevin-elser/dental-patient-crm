@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/app-client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("APP_DATABASE_URL")
+}
+
+model PatientGroup {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(16)
+  description String?  @db.Text
+  tags        String?  @db.Text  // Store as JSON array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  patients    PatientReference[]
+}
+
+model PatientReference {
+  id            Int          @id @default(autoincrement())
+  patientId     BigInt       // References PatNum from main database
+  colorIndex    Int          @default(1)
+  groups        PatientGroup[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([patientId])
+  @@index([patientId])
+} 

@@ -45,3 +45,8 @@ next-env.d.ts
 
 # generated sqls for testing
 *.sql
+
+# Prisma generated files
+/prisma/generated/
+
+/concepts

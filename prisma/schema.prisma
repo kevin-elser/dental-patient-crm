@@ -6390,6 +6390,16 @@ model patfieldpickitem {
   @@index([PatFieldDefNum], map: "PatFieldDefNum")
 }
 
+model patientgroup {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(16)
+  description String?   @db.Text
+  tags        String?   @db.Text  // Store as JSON array
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  patients    patient[] @relation("PatientGroupMembership")
+}
+
 model patient {
   PatNum                    BigInt    @id @default(autoincrement())
   LName                     String?   @default("") @db.VarChar(100)
@@ -6475,7 +6485,7 @@ model patient {
   HasSignedTil              Int       @db.TinyInt
   ShortCodeOptIn            Int       @db.TinyInt
   SecurityHash              String    @db.VarChar(255)
-  colorIndex                Int       @default(1)
+  groups      patientgroup[] @relation("PatientGroupMembership")
 
   @@index([Birthdate, PatStatus], map: "BirthdateStatus")
   @@index([ChartNumber], map: "ChartNumber")

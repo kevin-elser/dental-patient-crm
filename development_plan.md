@@ -59,7 +59,7 @@ Key functionalities that I plan to implement include:
   - **Single & Bulk Text Messaging**: I will implement both one-to-one messaging and bulk sending using templates.
   - **Bulk Emailing**: I will integrate SMTP-based emailing with templating for personalization.
 - **Template Engine**:  
-  - I plan to implement dynamic templating for personalizing messages (e.g., inserting `{patient.firstName}`).
+  - I plan to implement dynamic templating for personalizing messages (e.g., inserting `{patient.fName}` etc).
 - **Analytics Dashboard**:  
   - I will create a real-time analytics dashboard to track sent messages, including open rates and delivery statuses.
 

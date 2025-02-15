@@ -62,66 +62,78 @@ export async function GET(request: NextRequest) {
     const patientId = BigInt(id)
     
     // Get patient from main database
-    const [patient, appointments, financialData] = await Promise.all([
-      prisma.patient.findUnique({
-        where: { PatNum: patientId },
-        select: {
-          PatNum: true,
-          LName: true,
-          FName: true,
-          Birthdate: true,
-          HmPhone: true,
-          WkPhone: true,
-          WirelessPhone: true,
-          Email: true,
-          PatStatus: true,
-          Address: true,
-          Gender: true
-        }
-      }),
-      prisma.appointment.findMany({
-        where: {
-          PatNum: patientId,
-          AptDateTime: {
-            gte: new Date('2000-10-27'),
-            lte: new Date('2099-12-31')
+    let patient, appointments, financialData;
+    try {
+      [patient, appointments, financialData] = await Promise.all([
+        prisma.patient.findUnique({
+          where: { PatNum: patientId },
+          select: {
+            PatNum: true,
+            LName: true,
+            FName: true,
+            Birthdate: true,
+            HmPhone: true,
+            WkPhone: true,
+            WirelessPhone: true,
+            Email: true,
+            PatStatus: true,
+            Address: true,
+            Gender: true
           }
-        },
-        select: {
-          AptNum: true,
-          AptDateTime: true,
-          AptStatus: true,
-          Note: true,
-          ProcDescript: true
-        },
-        orderBy: {
-          AptDateTime: 'asc'
-        }
-      }),
-      prisma.$queryRaw<FinancialData[]>`
-        SELECT 
-          (SUM(COALESCE(cp.DedEst, 0) + COALESCE(cp.CopayAmt, 0)) - SUM(COALESCE(ps.SplitAmt, 0))) AS amountDue
-        FROM patient p
-        LEFT JOIN claimproc cp ON p.PatNum = cp.PatNum AND cp.Status = 5
-        LEFT JOIN paysplit ps ON p.PatNum = ps.PatNum
-        WHERE p.PatNum = ${patientId}
-        GROUP BY p.PatNum
-      `
-    ])
+        }),
+        prisma.appointment.findMany({
+          where: {
+            PatNum: patientId,
+            AptDateTime: {
+              gte: new Date('2000-10-27'),
+              lte: new Date('2099-12-31')
+            }
+          },
+          select: {
+            AptNum: true,
+            AptDateTime: true,
+            AptStatus: true,
+            Note: true,
+            ProcDescript: true
+          },
+          orderBy: {
+            AptDateTime: 'asc'
+          }
+        }),
+        prisma.$queryRaw<FinancialData[]>`
+          SELECT 
+            (SUM(COALESCE(cp.DedEst, 0) + COALESCE(cp.CopayAmt, 0)) - SUM(COALESCE(ps.SplitAmt, 0))) AS amountDue
+          FROM patient p
+          LEFT JOIN claimproc cp ON p.PatNum = cp.PatNum AND cp.Status = 5
+          LEFT JOIN paysplit ps ON p.PatNum = ps.PatNum
+          WHERE p.PatNum = ${patientId}
+          GROUP BY p.PatNum
+        `
+      ]);
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      return NextResponse.json({ error: 'Database query failed' }, { status: 500 });
+    }
 
     if (!patient) {
       return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
     }
 
     // Get color reference from app database
-    const patientRef = await appPrisma.patientReference.findFirst({
-      where: {
-        patientId: patient.PatNum
-      }
-    })
+    let patientRef;
+    try {
+      patientRef = await appPrisma.patientReference.findFirst({
+        where: {
+          patientId: patient.PatNum
+        }
+      });
+    } catch (colorError) {
+      console.error('Color reference query error:', colorError);
+      patientRef = null; // Continue with default color
+    }
 
     // Extract amount due from financial data (will be an array with one object)
-    const amountDue = financialData[0]?.amountDue ?? 0
+    const amountDue = financialData?.[0]?.amountDue ?? 0;
 
     // Combine the data and convert BigInt to string for serialization
     const serializedPatient = {
@@ -131,7 +143,7 @@ export async function GET(request: NextRequest) {
       Address: patient.Address ?? null,
       colorIndex: patientRef?.colorIndex || 1,
       amountDue: Number(amountDue).toFixed(2),
-      appointments: appointments.map(apt => ({
+      appointments: (appointments || []).map(apt => ({
         ...apt,
         AptNum: apt.AptNum.toString(),
         AptDateTime: apt.AptDateTime.toISOString()
@@ -140,7 +152,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(serializedPatient)
   } catch (error) {
-    console.error('Error fetching patient:', error)
-    return NextResponse.json({ error: 'Failed to fetch patient' }, { status: 500 })
+    console.error('Error in patient details route:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch patient',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 } 

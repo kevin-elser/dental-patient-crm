@@ -7,31 +7,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { PatientInitials } from "./patient-initials"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect } from "react"
-
-interface Patient {
-  PatNum: string
-  LName: string | null
-  FName: string | null
-  HmPhone: string | null
-  WkPhone: string | null
-  WirelessPhone: string | null
-  Email: string | null
-  PatStatus: number
-  colorIndex: number
-  Address: string | null
-  Gender: number
-  Birthdate: Date
-  appointments?: {
-    AptNum: string
-    AptDateTime: string
-    AptStatus: number
-    Note: string | null
-    ProcDescript: string | null
-  }[]
-}
+import { PatientListItem } from "@/app/api/patients/route"
+import { PatientDetails } from "@/app/api/patients/[id]/route"
 
 interface PatientDetailSidebarProps {
-  patient: Patient | null
+  patient: PatientListItem | null
   open: boolean
   onClose: () => void
 }
@@ -90,7 +70,7 @@ function formatAddress(address: string | null): { street: string; cityStateZip: 
 }
 
 export function PatientDetailSidebar({ patient: initialPatient, open, onClose }: PatientDetailSidebarProps) {
-  const [patient, setPatient] = useState<Patient | null>(null);
+  const [patient, setPatient] = useState<PatientDetails | null>(null);
 
   useEffect(() => {
     if (open && initialPatient) {
@@ -104,7 +84,7 @@ export function PatientDetailSidebar({ patient: initialPatient, open, onClose }:
         })
         .catch(error => {
           console.error('Error fetching patient details:', error);
-          setPatient(initialPatient); // Fallback to initial data if fetch fails
+          setPatient(initialPatient as PatientDetails); // Fallback to initial data if fetch fails
         });
     } else {
       setPatient(null);
@@ -229,7 +209,9 @@ export function PatientDetailSidebar({ patient: initialPatient, open, onClose }:
                     </div>
                     <div>
                       <div className="text-sm font-medium">Due</div>
-                      <div className="text-sm text-muted-foreground">-</div>
+                      <div className="text-sm text-muted-foreground">
+                        {patient.amountDue ? `$${patient.amountDue}` : '-'}
+                      </div>
                     </div>
                     <div className="col-span-2">
                       <div className="text-sm font-medium">Next appointment</div>

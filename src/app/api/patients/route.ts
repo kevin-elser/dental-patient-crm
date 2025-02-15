@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma, { appPrisma } from '@/lib/prisma'
 
+// Define the shape of a patient in the list
+export type PatientListItem = {
+  PatNum: string
+  LName: string | null
+  FName: string | null
+  HmPhone: string | null
+  WkPhone: string | null
+  WirelessPhone: string | null
+  Email: string | null
+  PatStatus: number
+  colorIndex: number
+  Address: string | null
+  Gender: number
+  Birthdate: Date
+}
+
+// Define the shape of the list API response
+export type PatientListResponse = {
+  patients: PatientListItem[]
+  totalCount: number
+  currentPage: number
+  hasMore: boolean
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

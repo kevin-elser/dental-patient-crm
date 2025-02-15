@@ -15,29 +15,14 @@ import { Phone, MessageSquare } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PatientInitials } from "./patient-initials"
 import { PatientDetailSidebar } from "./patient-detail-sidebar"
-
-// Types based on the original schema
-type Patient = {
-  PatNum: string
-  LName: string | null
-  FName: string | null
-  HmPhone: string | null
-  WkPhone: string | null
-  WirelessPhone: string | null
-  Email: string | null
-  PatStatus: number
-  colorIndex: number
-  Gender: number
-  Birthdate: Date
-  Address: string | null
-}
+import { PatientListItem } from "@/app/api/patients/route"
 
 export interface PatientTableProps {
-  patients: Patient[];
+  patients: PatientListItem[];
   totalCount: number;
   isLoading?: boolean;
   extraHeader?: React.ReactNode;
-  extraCell?: (patient: Patient) => React.ReactNode;
+  extraCell?: (patient: PatientListItem) => React.ReactNode;
   onSearchChange?: (search: string) => void;
 }
 
@@ -82,13 +67,13 @@ export function PatientTable({
   onSearchChange
 }: PatientTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([])
+  const [filteredPatients, setFilteredPatients] = useState<PatientListItem[]>([])
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const currentPageRef = useRef(0)
   const observerTarget = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Initialize with initial patients on mount
@@ -207,7 +192,7 @@ export function PatientTable({
   }, [loadMorePatients, hasMore, isLoadingMore])
 
   // Get primary contact number (prioritize wireless -> home -> work)
-  const getPrimaryPhone = (patient: Patient) => {
+  const getPrimaryPhone = (patient: PatientListItem) => {
     return patient.WirelessPhone || patient.HmPhone || patient.WkPhone || null
   }
 

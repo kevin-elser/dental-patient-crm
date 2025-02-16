@@ -23,8 +23,22 @@ model PatientReference {
   patientId     BigInt       // References PatNum from main database
   colorIndex    Int          @default(1)
   groups        PatientGroup[]
+  notes         PatientNote[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
+  @@unique([patientId])
   @@index([patientId])
+}
+
+model PatientNote {
+  id          Int              @id @default(autoincrement())
+  patientRef  PatientReference @relation(fields: [patientRefId], references: [id])
+  patientRefId Int
+  title       String          @db.VarChar(255)
+  content     String          @db.Text
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([patientRefId])
 } 

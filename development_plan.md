@@ -118,7 +118,6 @@ Below is my planned roadmap with milestones:
   - [x] Fill route with data needed for the sidebar.
   - [x] Add cards to fill the sidebar overview.
   - [x] Fill overview with database data.
-  - [ ] Fill payment history with database data.
   - [ ] Create notes section for individual patient.
 
 ### Milestone 4: Campaigns Module and Messaging
@@ -136,7 +135,12 @@ Below is my planned roadmap with milestones:
 - [ ] Design and implement a 24-hour day-view calendar.
 - [ ] Integrate event data fetching and interactivity.
 
-### Milestone 7: Testing & Deployment
+### Milestone 7: Payment History Module
+- [ ] Create a payment history table view integrating Stripe API.
+- [ ] For development, fill with dummy data.
+- [ ] Add a payment history sidebar to the patient detail view.
+
+### Milestone 8: Testing & Deployment
 - [ ] Write unit and integration tests (using Jest or a similar framework).
 - [ ] Conduct end-to-end testing for key user flows.
 

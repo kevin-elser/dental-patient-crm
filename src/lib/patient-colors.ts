@@ -116,7 +116,7 @@ export async function updateColorsAfterRemoval(
       select: { PatNum: true }
     })
 
-    let previousRef = previousPatient ? await appPrisma.patientReference.findUnique({
+    let previousRef = previousPatient ? await appPrisma.patientReference.findFirst({
       where: { patientId: previousPatient.PatNum }
     }) : null;
 
@@ -129,7 +129,9 @@ export async function updateColorsAfterRemoval(
 
     // Update only the first patient's reference
     await appPrisma.patientReference.update({
-      where: { patientId: newlyAdjacentPatients[0].PatNum },
+      where: {
+        patientId: newlyAdjacentPatients[0].PatNum
+      },
       data: { colorIndex: newColor }
     })
   }

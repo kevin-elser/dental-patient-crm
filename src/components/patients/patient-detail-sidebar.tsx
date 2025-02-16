@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect } from "react"
 import { PatientListItem } from "@/app/api/patients/route"
 import { PatientDetails } from "@/app/api/patients/[id]/route"
+import { PatientNotes } from "./patient-notes"
 
 interface PatientDetailSidebarProps {
   patient: PatientListItem | null
@@ -90,6 +91,30 @@ export function PatientDetailSidebar({ patient: initialPatient, open, onClose }:
       setPatient(null);
     }
   }, [open, initialPatient]);
+
+  const handleAddNote = async (note: { title: string; content: string }) => {
+    if (!patient) return;
+
+    try {
+      const response = await fetch(`/api/patients/${patient.PatNum}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(note),
+      });
+
+      if (!response.ok) throw new Error('Failed to add note');
+
+      // Refresh patient data to get updated notes
+      const updatedPatient = await fetch(`/api/patients/${patient.PatNum}`).then(res => res.json());
+      if (!updatedPatient.error) {
+        setPatient(updatedPatient);
+      }
+    } catch (error) {
+      console.error('Error adding note:', error);
+    }
+  };
 
   if (!patient) return null;
 
@@ -241,19 +266,29 @@ export function PatientDetailSidebar({ patient: initialPatient, open, onClose }:
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <div className="text-sm font-medium">Payer Name</div>
-                      <div className="text-sm text-muted-foreground">-</div>
+                      <div className="text-sm text-muted-foreground">
+                        {patient.insurance?.[0]?.PayerName || '-'}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm font-medium">Payer ID</div>
-                      <div className="text-sm text-muted-foreground">-</div>
+                      <div className="text-sm text-muted-foreground">
+                        {patient.insurance?.[0]?.PayerID || '-'}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm font-medium">Effective Date</div>
-                      <div className="text-sm text-muted-foreground">-</div>
+                      <div className="text-sm text-muted-foreground">
+                        {patient.insurance?.[0]?.EffectiveDate 
+                          ? new Date(patient.insurance[0].EffectiveDate).toLocaleDateString()
+                          : '-'}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm font-medium">Member ID</div>
-                      <div className="text-sm text-muted-foreground">-</div>
+                      <div className="text-sm text-muted-foreground">
+                        {patient.insurance?.[0]?.MemberID || '-'}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -301,7 +336,10 @@ export function PatientDetailSidebar({ patient: initialPatient, open, onClose }:
             </TabsContent>
 
             <TabsContent value="notes">
-              {/* Notes tab content will go here */}
+              <PatientNotes
+                notes={patient?.notes || []}
+                onAddNote={handleAddNote}
+              />
             </TabsContent>
           </Tabs>
         </div>

@@ -45,10 +45,29 @@ export type PatientDetails = {
     Note: string | null
     ProcDescript: string | null
   }[]
+  insurance?: {
+    PayerName: string | null
+    PayerID: string
+    MemberID: string | null
+    EffectiveDate: string
+  }[]
+  notes?: {
+    id: number
+    title: string
+    content: string
+    createdAt: string
+  }[]
 }
 
 interface FinancialData {
   amountDue: number | null
+}
+
+interface InsuranceData {
+  PayerName: string | null
+  PayerID: bigint
+  MemberID: string | null
+  EffectiveDate: Date
 }
 
 export async function GET(request: NextRequest) {
@@ -62,9 +81,9 @@ export async function GET(request: NextRequest) {
     const patientId = BigInt(id)
     
     // Get patient from main database
-    let patient, appointments, financialData;
+    let patient, appointments, financialData, insuranceData, patientRef;
     try {
-      [patient, appointments, financialData] = await Promise.all([
+      [patient, appointments, financialData, insuranceData, patientRef] = await Promise.all([
         prisma.patient.findUnique({
           where: { PatNum: patientId },
           select: {
@@ -108,7 +127,28 @@ export async function GET(request: NextRequest) {
           LEFT JOIN paysplit ps ON p.PatNum = ps.PatNum
           WHERE p.PatNum = ${patientId}
           GROUP BY p.PatNum
-        `
+        `,
+        prisma.$queryRaw<InsuranceData[]>`
+          SELECT
+            carrier.CarrierName AS PayerName,
+            insplan.CarrierNum AS PayerID,
+            patplan.PatID AS MemberID,
+            inssub.DateEffective AS EffectiveDate
+          FROM patient p
+          LEFT JOIN patplan ON p.PatNum = patplan.PatNum AND patplan.Ordinal = 1
+          LEFT JOIN inssub ON patplan.InsSubNum = inssub.InsSubNum
+          LEFT JOIN insplan ON inssub.PlanNum = insplan.PlanNum
+          LEFT JOIN carrier ON insplan.CarrierNum = carrier.CarrierNum
+          WHERE p.PatNum = ${patientId}
+        `,
+        appPrisma.patientReference.findFirst({
+          where: { patientId },
+          include: {
+            notes: {
+              orderBy: { createdAt: 'desc' }
+            }
+          }
+        })
       ]);
     } catch (dbError) {
       console.error('Database query error:', dbError);
@@ -117,19 +157,6 @@ export async function GET(request: NextRequest) {
 
     if (!patient) {
       return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
-    }
-
-    // Get color reference from app database
-    let patientRef;
-    try {
-      patientRef = await appPrisma.patientReference.findFirst({
-        where: {
-          patientId: patient.PatNum
-        }
-      });
-    } catch (colorError) {
-      console.error('Color reference query error:', colorError);
-      patientRef = null; // Continue with default color
     }
 
     // Extract amount due from financial data (will be an array with one object)
@@ -147,7 +174,19 @@ export async function GET(request: NextRequest) {
         ...apt,
         AptNum: apt.AptNum.toString(),
         AptDateTime: apt.AptDateTime.toISOString()
-      }))
+      })),
+      insurance: (insuranceData || []).map(ins => ({
+        PayerName: ins?.PayerName ?? null,
+        PayerID: ins?.PayerID?.toString() ?? '',
+        MemberID: ins?.MemberID ?? null,
+        EffectiveDate: ins?.EffectiveDate?.toISOString() ?? null
+      })),
+      notes: patientRef?.notes?.map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        createdAt: note.createdAt.toISOString()
+      })) || []
     }
 
     return NextResponse.json(serializedPatient)

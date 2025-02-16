@@ -12,7 +12,19 @@ const appPrisma = new AppPrismaClient()
 async function main() {
   try {
     console.log('Starting database seed...')
+    
+    // Step 1: Generate dummy insurance data
+    console.log('Generating dummy insurance data...')
+    await import('./add-dummy-insurance')
+    
+    // Step 2: Generate dummy appointments
+    console.log('Generating dummy appointments...')
+    await import('./add-dummy-appointments')
+    
+    // Step 3: Assign colors to all patients
+    console.log('Assigning patient colors...')
     const patientsProcessed = await bulkAssignPatientColors(prisma, appPrisma)
+    
     console.log(`Database seed completed successfully! Processed ${patientsProcessed} patients.`)
   } catch (error) {
     console.error('Error during database seed:', error)

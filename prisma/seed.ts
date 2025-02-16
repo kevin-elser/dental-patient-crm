@@ -1,6 +1,7 @@
 import { PrismaClient as MainPrismaClient } from '@prisma/client'
 import { PrismaClient as AppPrismaClient } from './generated/app-client'
 import { bulkAssignPatientColors } from '../src/lib/prisma-middleware'
+import { env } from 'process'
 
 // Used to get patient list and ordering
 const prisma = new MainPrismaClient()
@@ -13,8 +14,8 @@ async function main() {
   try {
     console.log('Starting database seed...')
     
-    // Only run generating dummy data in development mode
-    if (process.env.NODE_ENV === 'development') {
+    // Only run generating dummy data if the DUMMY_DATA environment variable is set to true
+    if (process.env.DUMMY_DATA === 'true') {
       // Step 1: Generate dummy insurance data
       console.log('Generating dummy insurance data...')
       await import('./add-dummy-insurance')

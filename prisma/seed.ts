@@ -13,13 +13,16 @@ async function main() {
   try {
     console.log('Starting database seed...')
     
-    // Step 1: Generate dummy insurance data
-    console.log('Generating dummy insurance data...')
-    await import('./add-dummy-insurance')
+    // Only run generating dummy data in development mode
+    if (process.env.NODE_ENV === 'development') {
+      // Step 1: Generate dummy insurance data
+      console.log('Generating dummy insurance data...')
+      await import('./add-dummy-insurance')
     
-    // Step 2: Generate dummy appointments
-    console.log('Generating dummy appointments...')
-    await import('./add-dummy-appointments')
+      // Step 2: Generate dummy appointments
+      console.log('Generating dummy appointments...')
+      await import('./add-dummy-appointments')
+    }
     
     // Step 3: Assign colors to all patients
     console.log('Assigning patient colors...')

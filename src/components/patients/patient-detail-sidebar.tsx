@@ -120,7 +120,7 @@ export function PatientDetailSidebar({ patient: initialPatient, open, onClose }:
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-[400px] sm:w-[540px] overflow-y-scroll [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:absolute [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-track]:bg-transparent scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+      <SheetContent className="w-[400px] sm:w-[540px] overflow-y-scroll scrollbar-stable">
         <SheetHeader className="space-y-0">
           <SheetTitle className="text-left">
             Patient Details

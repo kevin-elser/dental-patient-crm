@@ -118,13 +118,13 @@ Below is my planned roadmap with milestones:
   - [x] Fill route with data needed for the sidebar.
   - [x] Add cards to fill the sidebar overview.
   - [x] Fill overview with database data.
-  - [ ] Create notes section for individual patient.
+  - [x] Create notes section for individual patient.
 
 ### Milestone 4: Campaigns Module and Messaging
-- [ ] Integrate SMS and email APIs.
-- [ ] Leverage SMS to create the messaging interface and components.
+- [x] Integrate SMS and email APIs.
+- [x] Leverage SMS to create the messaging interface and components.
+- [ ] Add scheduling functionality to the messaging interface.
 - [ ] Develop templating functionality for bulk messaging.
-- [ ] Build the basic analytics dashboard.
 
 ### Milestone 5: Calling Module
 - [ ] Integrate a calling API.
@@ -140,7 +140,14 @@ Below is my planned roadmap with milestones:
 - [ ] For development, fill with dummy data.
 - [ ] Add a payment history sidebar to the patient detail view.
 
-### Milestone 8: Testing & Deployment
+### Milestone 8: Dashboard and Analytics
+- [ ] Create a dashboard for analytics.
+- [ ] Add analytics for messages, calls, and appointments.
+- [ ] Add analytics for patient management.
+- [ ] Add analytics for calendar.
+- [ ] Add analytics for payment history.
+
+### Milestone 9: Testing & Deployment
 - [ ] Write unit and integration tests (using Jest or a similar framework).
 - [ ] Conduct end-to-end testing for key user flows.
 

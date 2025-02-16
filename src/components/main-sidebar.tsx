@@ -46,10 +46,10 @@ const ROUTE_CONFIG = {
   messages: {
     name: "Messages",
     path: "/messages",
-    defaultSubmenu: "received",
+    defaultSubmenu: "all",
     submenuItems: {
-      received: "/messages/received",
-      sent: "/messages/sent",
+      all: "/messages/all",
+      scheduled: "/messages/scheduled",
       templates: "/messages/templates",
     },
     icon: <MessageSquare />,

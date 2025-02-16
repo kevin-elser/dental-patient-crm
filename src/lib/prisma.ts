@@ -1,14 +1,15 @@
-import { PrismaClient as MainPrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 import { PrismaClient as AppPrismaClient } from '../../prisma/generated/app-client'
 import { patientColorExtension } from './prisma-middleware'
 
 declare global {
-  var prisma: MainPrismaClient | undefined
+  var prisma: PrismaClient | undefined;
   var appPrisma: AppPrismaClient | undefined
 }
 
 // Main database client
-const prisma = global.prisma || new MainPrismaClient()
+const prisma = global.prisma || new PrismaClient()
+
 // App-specific database client
 const appPrisma = global.appPrisma || new AppPrismaClient()
 

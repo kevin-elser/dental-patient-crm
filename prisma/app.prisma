@@ -22,8 +22,10 @@ model PatientReference {
   id            Int          @id @default(autoincrement())
   patientId     BigInt       // References PatNum from main database
   colorIndex    Int          @default(1)
+  phoneNumber   String?      @db.VarChar(20)  // Store the patient's phone number
   groups        PatientGroup[]
   notes         PatientNote[]
+  messages      Message[]    // Relation to messages
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -41,4 +43,41 @@ model PatientNote {
   updatedAt   DateTime        @updatedAt
 
   @@index([patientRefId])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  direction   String   @db.VarChar(10) // "INBOUND" or "OUTBOUND"
+  status      String   @db.VarChar(20) // "DELIVERED", "FAILED", "PENDING", etc.
+  fromNumber  String   @db.VarChar(20)
+  toNumber    String   @db.VarChar(20)
+  body        String   @db.Text
+  twilioSid   String?  @db.VarChar(50)  // Twilio message ID for reference
+  patientId   BigInt   // Reference to patient in main DB
+  patientRef  PatientReference @relation(fields: [patientRefId], references: [id])
+  patientRefId Int
+  isEncrypted Boolean  @default(true)
+  metadata    Json?    // Store additional Twilio metadata
+  auditLog    MessageAudit[]
+
+  @@index([patientId])
+  @@index([patientRefId])
+  @@index([createdAt])
+  @@index([twilioSid])
+}
+
+model MessageAudit {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id])
+  action    String   @db.VarChar(50) // "VIEW", "SEND", "DELETE", etc.
+  userId    String   @db.VarChar(255) // Store the user's email who performed the action
+  timestamp DateTime @default(now())
+  ipAddress String?  @db.VarChar(45)
+  userAgent String?  @db.VarChar(255)
+
+  @@index([messageId])
+  @@index([timestamp])
 } 

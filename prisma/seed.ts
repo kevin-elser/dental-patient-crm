@@ -23,9 +23,13 @@ async function main() {
       // Step 2: Generate dummy appointments
       console.log('Generating dummy appointments...')
       await import('./add-dummy-appointments')
+
+      // Step 3: Generate dummy messages
+      console.log('Generating dummy messages...')
+      await import('./add-dummy-messages')
     }
     
-    // Step 3: Assign colors to all patients
+    // Step 4: Assign colors to all patients
     console.log('Assigning patient colors...')
     const patientsProcessed = await bulkAssignPatientColors(prisma, appPrisma)
     

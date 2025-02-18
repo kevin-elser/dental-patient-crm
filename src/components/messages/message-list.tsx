@@ -4,7 +4,18 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
+import { Calendar, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Message = {
   id: string;
@@ -42,6 +53,7 @@ export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
   const currentPage = useRef(0);
   const observerTarget = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -158,6 +170,28 @@ export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
     };
   }, [isLoadingMore, hasMore]);
 
+  const handleDeleteMessage = async (message: Message) => {
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageId: message.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+
+      setMessages(prev => prev.filter(m => m.id !== message.id));
+      setMessageToDelete(null);
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      setError('Failed to delete message');
+    }
+  };
+
   if (error) {
     return (
       <div className="p-4 text-red-500">
@@ -203,8 +237,21 @@ export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
                         : "mr-auto bg-muted"
                     } max-w-[80%] rounded-lg ${
                       message.status === 'SCHEDULED' ? 'opacity-75' : ''
-                    }`}
+                    } relative`}
                   >
+                    {message.status === 'SCHEDULED' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1 h-6 w-6 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 p-0"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setMessageToDelete(message);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                     <div className="flex flex-col gap-1">
                       <p className="text-sm">{message.body}</p>
                       <div className="flex justify-between items-center mt-2">
@@ -236,6 +283,26 @@ export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
           </>
         )}
       </div>
+
+      <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scheduled Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this scheduled message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => messageToDelete && handleDeleteMessage(messageToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ScrollArea>
   );
 } 

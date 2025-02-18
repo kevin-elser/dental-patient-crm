@@ -142,4 +142,61 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { messageId } = await request.json();
+
+    if (!messageId) {
+      return NextResponse.json(
+        { error: 'Message ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get the message to verify it's a scheduled message
+    const message = await appPrisma.message.findUnique({
+      where: { id: messageId },
+      include: {
+        patientRef: true,
+      },
+    });
+
+    if (!message) {
+      return NextResponse.json(
+        { error: 'Message not found' },
+        { status: 404 }
+      );
+    }
+
+    // Only allow deletion of scheduled messages that haven't been sent yet
+    if (message.status !== 'SCHEDULED' || !message.scheduledFor || message.scheduledFor <= new Date()) {
+      return NextResponse.json(
+        { error: 'Only future scheduled messages can be deleted' },
+        { status: 400 }
+      );
+    }
+
+    // Delete in a transaction to ensure both operations succeed or fail together
+    await appPrisma.$transaction(async (tx) => {
+      // First delete all audit records
+      await tx.messageAudit.deleteMany({
+        where: { messageId: message.id }
+      });
+
+      // Then delete the message itself
+      await tx.message.delete({
+        where: { id: messageId },
+      });
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete message' },
+      { status: 500 }
+    );
+  }
 } 

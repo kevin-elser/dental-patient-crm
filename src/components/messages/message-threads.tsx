@@ -21,15 +21,14 @@ interface MessageThread {
 interface MessageThreadsProps {
   threads: MessageThread[];
   currentPatientId?: string;
-  variant?: "default" | "scheduled";
 }
 
-export function MessageThreads({ threads, currentPatientId, variant = "default" }: MessageThreadsProps) {
+export function MessageThreads({ threads, currentPatientId }: MessageThreadsProps) {
   return (
     <div className="flex-1 overflow-auto">
       {threads.map((thread) => {
         const [firstName, lastName] = thread.patientName.split(" ");
-        const isScheduled = variant === "scheduled" || thread.hasScheduledMessages;
+        const isScheduled = thread.hasScheduledMessages;  
         
         return (
           <Link

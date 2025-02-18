@@ -19,5 +19,5 @@ export default function ScheduledMessagesPage() {
     );
   }
 
-  return <MessageInbox variant="scheduled" />;
+  return <MessageInbox />;
 } 

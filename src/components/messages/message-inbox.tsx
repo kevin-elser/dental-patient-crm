@@ -24,29 +24,20 @@ interface Patient {
 interface MessageInboxProps {
   patient?: Patient;
   onSendMessage?: (message: string, scheduledFor: Date) => Promise<void>;
-  variant?: "default" | "scheduled";
   className?: string;
 }
 
 export function MessageInbox({ 
   patient, 
   onSendMessage,
-  variant = "default",
   className
 }: MessageInboxProps) {
   const { threads, loading } = useMessages();
   const [newMessageModalOpen, setNewMessageModalOpen] = useState(false);
 
-  const filteredThreads = variant === "scheduled" 
-    ? threads?.filter(thread => thread.hasScheduledMessages)
-    : threads;
-
   if (loading) {
     return null; // Parent component handles loading state
   }
-
-  // Only show compose for default variant and when we have both patient and onSendMessage
-  const showCompose = variant === "default" && patient && onSendMessage;
 
   return (
     <div className={cn("flex h-screen", className)}>
@@ -54,9 +45,9 @@ export function MessageInbox({
       <div className="w-80 border-r flex flex-col">
         <div className="p-6 border-b flex justify-between items-center h-[88px]">
           <h1 className="text-xl font-semibold">
-            {variant === "scheduled" ? "Scheduled" : "Inbox"}
+            Inbox  
           </h1>
-          {variant === "default" && (
+
             <Button 
               variant="ghost" 
               size="icon" 
@@ -65,13 +56,11 @@ export function MessageInbox({
             >
               <PenSquare className="h-6 w-6" />
             </Button>
-          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           <MessageThreads 
-            threads={filteredThreads}
+            threads={threads}
             currentPatientId={patient?.id}
-            variant={variant}
           />
         </div>
       </div>
@@ -116,12 +105,9 @@ export function MessageInbox({
                 key={patient.id}
                 patientId={patient.id}
                 currentUserNumber={process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || ""}
-                variant={variant}
               />
             </div>
-
-            {/* Compose Area */}
-            {showCompose && (
+            {onSendMessage && (
               <MessageCompose onSend={onSendMessage} />
             )}
           </>

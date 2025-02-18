@@ -49,7 +49,6 @@ const ROUTE_CONFIG = {
     defaultSubmenu: "all",
     submenuItems: {
       all: "/messages/all",
-      scheduled: "/messages/scheduled",
       templates: "/messages/templates",
     },
     icon: <MessageSquare />,

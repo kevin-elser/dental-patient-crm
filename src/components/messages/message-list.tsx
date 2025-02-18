@@ -20,7 +20,6 @@ type Message = {
 interface MessageListProps {
   patientId: string;
   currentUserNumber: string;
-  variant?: "default" | "scheduled";
 }
 
 function MessageSkeleton() {
@@ -37,7 +36,7 @@ function MessageSkeleton() {
   );
 }
 
-export function MessageList({ patientId, currentUserNumber, variant = "default" }: MessageListProps) {
+export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -55,7 +54,7 @@ export function MessageList({ patientId, currentUserNumber, variant = "default" 
 
   const fetchMessages = async (page: number) => {
     try {
-      const response = await fetch(`/api/messages/${patientId}?page=${page}${variant === "scheduled" ? "&scheduled=true" : ""}`);
+      const response = await fetch(`/api/messages/${patientId}?page=${page}`);
       if (!response.ok) throw new Error("Failed to fetch messages");
       const data = await response.json();
       // Reverse the messages so newest are at the bottom
@@ -191,9 +190,7 @@ export function MessageList({ patientId, currentUserNumber, variant = "default" 
           <>
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                {variant === "scheduled" 
-                  ? "No scheduled messages"
-                  : "No messages yet. Start a conversation!"}
+                "No messages yet. Start a conversation!"
               </div>
             ) : (
               <>

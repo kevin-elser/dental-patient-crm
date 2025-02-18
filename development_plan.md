@@ -123,7 +123,10 @@ Below is my planned roadmap with milestones:
 ### Milestone 4: Campaigns Module and Messaging
 - [x] Integrate SMS and email APIs.
 - [x] Leverage SMS to create the messaging interface and components.
-- [ ] Add scheduling functionality to the messaging interface.
+- [x] Add scheduling functionality to the messaging interface.
+  - [x] Add a modal for scheduling messages.
+  - [x] Add logic for handling the sending of scheduled messages via script.
+  - [x] Add a modal for sending messages.
 - [ ] Develop templating functionality for bulk messaging.
 
 ### Milestone 5: Calling Module

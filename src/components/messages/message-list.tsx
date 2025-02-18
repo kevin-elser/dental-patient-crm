@@ -3,9 +3,9 @@ import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMessages } from "@/contexts/message-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +48,7 @@ function MessageSkeleton() {
 }
 
 export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
+  const { refreshThreads } = useMessages();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -184,8 +185,12 @@ export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
         throw new Error('Failed to delete message');
       }
 
+      // Remove the message from the local state
       setMessages(prev => prev.filter(m => m.id !== message.id));
       setMessageToDelete(null);
+      
+      // Refresh the message threads to update the last message
+      await refreshThreads();
     } catch (error) {
       console.error('Error deleting message:', error);
       setError('Failed to delete message');

@@ -60,12 +60,14 @@ model Message {
   patientRefId Int
   isEncrypted Boolean  @default(true)
   metadata    Json?    // Store additional Twilio metadata
+  scheduledFor DateTime? // When the message should be sent
   auditLog    MessageAudit[]
 
   @@index([patientId])
   @@index([patientRefId])
   @@index([createdAt])
   @@index([twilioSid])
+  @@index([scheduledFor])
 }
 
 model MessageAudit {

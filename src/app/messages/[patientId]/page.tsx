@@ -53,17 +53,20 @@ export default function PatientMessagesPage() {
     }
   }, [patientId, threads, router, loading, error, refreshThreads, hasFetchedPatient]);
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string, scheduledFor: Date) => {
     try {
+      const requestBody = {
+        patientId,
+        body: message,
+        scheduledFor: scheduledFor.toISOString()
+      };
+
       const response = await fetch("/api/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          patientId,
-          body: message,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

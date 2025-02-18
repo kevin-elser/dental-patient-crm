@@ -1,6 +1,8 @@
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { PatientInitials } from "@/components/patients/patient-initials";
+import { Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface MessageThread {
   patientId: string;
@@ -10,27 +12,32 @@ interface MessageThread {
     body: string;
     createdAt: Date;
     direction: "INBOUND" | "OUTBOUND";
+    scheduledFor?: Date;
   };
   unreadCount?: number;
+  hasScheduledMessages?: boolean;
 }
 
 interface MessageThreadsProps {
   threads: MessageThread[];
   currentPatientId?: string;
+  variant?: "default" | "scheduled";
 }
 
-export function MessageThreads({ threads, currentPatientId }: MessageThreadsProps) {
+export function MessageThreads({ threads, currentPatientId, variant = "default" }: MessageThreadsProps) {
   return (
     <div className="flex-1 overflow-auto">
       {threads.map((thread) => {
         const [firstName, lastName] = thread.patientName.split(" ");
+        const isScheduled = variant === "scheduled" || thread.hasScheduledMessages;
+        
         return (
           <Link
             key={thread.patientId}
             href={`/messages/${thread.patientId}`}
             className={`block p-4 border-b hover:bg-muted/50 transition-colors ${
               currentPatientId === thread.patientId ? "bg-muted" : ""
-            }`}
+            } ${isScheduled ? "bg-yellow-50/50 dark:bg-yellow-900/10" : ""}`}
           >
             <div className="flex gap-3 items-center">
               <PatientInitials
@@ -39,7 +46,7 @@ export function MessageThreads({ threads, currentPatientId }: MessageThreadsProp
                 colorIndex={thread.colorIndex}
                 className="shrink-0"
               />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="font-medium truncate">{thread.patientName}</h3>
                   <span className="text-xs text-muted-foreground shrink-0 ml-2">
@@ -48,10 +55,18 @@ export function MessageThreads({ threads, currentPatientId }: MessageThreadsProp
                     })}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground truncate">
-                  {thread.lastMessage.direction === "OUTBOUND" && "You: "}
-                  {thread.lastMessage.body}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground truncate flex-1">
+                    {thread.lastMessage.direction === "OUTBOUND" && "You: "}
+                    {thread.lastMessage.body}
+                  </p>
+                  {isScheduled && (
+                    <Badge variant="outline" className="shrink-0 gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Scheduled
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </Link>

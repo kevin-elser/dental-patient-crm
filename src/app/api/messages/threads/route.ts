@@ -57,8 +57,18 @@ export async function GET(request: Request) {
         : 0;
       const phoneNumber = patientInfo.WirelessPhone || patientInfo.HmPhone || patientInfo.WkPhone || "";
 
-      // Return thread info even if no messages exist yet
-      return NextResponse.json(serializeBigInt([{
+      // Check for scheduled messages
+      const hasScheduledMessages = await appPrisma.message.findFirst({
+        where: {
+          patientId: BigInt(specificPatientId),
+          status: 'SCHEDULED',
+          scheduledFor: {
+            gt: new Date(),
+          },
+        },
+      }) !== null;
+
+      const response = [{
         patientId: specificPatientId,
         patientName,
         colorIndex: patientRef.colorIndex,
@@ -67,6 +77,7 @@ export async function GET(request: Request) {
           createdAt: new Date(),
           direction: "OUTBOUND",
         },
+        hasScheduledMessages,
         patient: {
           ...patientInfo,
           PatNum: patientInfo.PatNum.toString(),
@@ -74,7 +85,9 @@ export async function GET(request: Request) {
           phoneNumber,
           status: patientInfo.PatStatus === 1 ? "Active" : "Inactive",
         }
-      }]));
+      }];
+
+      return NextResponse.json(serializeBigInt(response));
     }
 
     // Get all unique patients who have messages
@@ -96,67 +109,87 @@ export async function GET(request: Request) {
     // Get the last message and patient info for each thread
     const threadsWithLastMessage = await Promise.all(
       messageThreads.map(async (thread) => {
-        const [lastMessage, patientInfo] = await Promise.all([
-          appPrisma.message.findFirst({
-            where: {
-              patientId: thread.patientId,
-            },
-            orderBy: {
-              createdAt: "desc",
-            },
-          }),
-          prisma.patient.findFirst({
-            where: {
-              PatNum: thread.patientId,
-            },
-            select: {
-              PatNum: true,
-              LName: true,
-              FName: true,
-              Birthdate: true,
-              HmPhone: true,
-              WkPhone: true,
-              WirelessPhone: true,
-              Email: true,
-              PatStatus: true,
-              Address: true,
-              Gender: true
-            },
-          }),
-        ]);
+        try {
+          const [lastMessage, patientInfo, hasScheduledMessages] = await Promise.all([
+            appPrisma.message.findFirst({
+              where: {
+                patientId: thread.patientId,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+            }),
+            prisma.patient.findFirst({
+              where: {
+                PatNum: thread.patientId,
+              },
+              select: {
+                PatNum: true,
+                LName: true,
+                FName: true,
+                Birthdate: true,
+                HmPhone: true,
+                WkPhone: true,
+                WirelessPhone: true,
+                Email: true,
+                PatStatus: true,
+                Address: true,
+                Gender: true
+              },
+            }),
+            appPrisma.message.findFirst({
+              where: {
+                patientId: thread.patientId,
+                status: 'SCHEDULED',
+                scheduledFor: {
+                  gt: new Date(),
+                },
+              },
+            }).then(result => result !== null),
+          ]);
 
-        if (!patientInfo) {
+          if (!patientInfo) {
+            return null;
+          }
+
+          const patientName = `${patientInfo.FName} ${patientInfo.LName}`.trim();
+          const age = patientInfo.Birthdate 
+            ? Math.floor((new Date().getTime() - new Date(patientInfo.Birthdate).getTime()) / 31557600000)
+            : 0;
+          const phoneNumber = patientInfo.WirelessPhone || patientInfo.HmPhone || patientInfo.WkPhone || "";
+
+          return {
+            patientId: thread.patientId.toString(),
+            patientName,
+            colorIndex: thread.patientRef.colorIndex,
+            lastMessage: {
+              body: lastMessage?.body || "",
+              createdAt: lastMessage?.createdAt || new Date(),
+              direction: lastMessage?.direction || "OUTBOUND",
+              scheduledFor: lastMessage?.scheduledFor,
+            },
+            hasScheduledMessages,
+            patient: {
+              ...patientInfo,
+              PatNum: patientInfo.PatNum.toString(),
+              age,
+              phoneNumber,
+              status: patientInfo.PatStatus === 1 ? "Active" : "Inactive",
+            }
+          };
+        } catch (err) {
+          console.error("Error processing thread:", err);
           return null;
         }
-
-        const patientName = `${patientInfo.FName} ${patientInfo.LName}`.trim();
-        const age = patientInfo.Birthdate 
-          ? Math.floor((new Date().getTime() - new Date(patientInfo.Birthdate).getTime()) / 31557600000)
-          : 0;
-        const phoneNumber = patientInfo.WirelessPhone || patientInfo.HmPhone || patientInfo.WkPhone || "";
-
-        return {
-          patientId: thread.patientId.toString(),
-          patientName,
-          colorIndex: thread.patientRef.colorIndex,
-          lastMessage: {
-            body: lastMessage?.body || "",
-            createdAt: lastMessage?.createdAt || new Date(),
-            direction: lastMessage?.direction || "OUTBOUND",
-          },
-          patient: {
-            ...patientInfo,
-            PatNum: patientInfo.PatNum.toString(),
-            age,
-            phoneNumber,
-            status: patientInfo.PatStatus === 1 ? "Active" : "Inactive",
-          }
-        };
       })
     );
 
-    // Filter out null threads and return
-    return NextResponse.json(serializeBigInt(threadsWithLastMessage.filter(Boolean)));
+    const validThreads = threadsWithLastMessage.filter(Boolean);
+    if (!validThreads.length) {
+      return NextResponse.json([]);
+    }
+
+    return NextResponse.json(serializeBigInt(validThreads));
   } catch (error) {
     console.error("Error fetching message threads:", error);
     return NextResponse.json(

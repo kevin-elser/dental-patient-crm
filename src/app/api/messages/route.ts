@@ -6,11 +6,17 @@ import { serializeBigInt } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
-    // TODO: Add authentication check here before production
+    // Log the raw request body text first
+    const rawBody = await request.text();
+    console.log('API - Raw request body:', rawBody);
     
-    const { patientId, body } = await request.json();
+    // Parse it ourselves to see what we get
+    const parsedBody = JSON.parse(rawBody);
+    console.log('API - Parsed body:', parsedBody);
+    
+    const { patientId, body: messageBody, scheduledFor } = parsedBody;
 
-    if (!patientId || !body) {
+    if (!patientId || !messageBody) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -52,52 +58,77 @@ export async function POST(request: Request) {
         data: {
           patientId: BigInt(patientId),
           colorIndex: Math.floor(Math.random() * 8) + 1,
-          phoneNumber, // Store the phone number in the reference
+          phoneNumber,
         },
       });
     } else if (!patientRef.phoneNumber) {
-      // Update phone number if it's missing
       await appPrisma.patientReference.update({
         where: { id: patientRef.id },
         data: { phoneNumber },
       });
     }
 
-    // Send the message via Twilio
-    const result = await sendSMS(phoneNumber, body);
+    console.log('Scheduling message for:', scheduledFor);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
-    }
-
-    // Store the message in our database
+    // Create the message in the database
     const message = await appPrisma.message.create({
       data: {
         direction: 'OUTBOUND',
-        status: 'SENT',
+        status: scheduledFor ? 'SCHEDULED' : 'PENDING',
         fromNumber: process.env.TWILIO_PHONE_NUMBER!,
         toNumber: phoneNumber,
-        body,
-        twilioSid: result.messageId,
+        body: messageBody,
         patientId: BigInt(patientId),
         patientRefId: patientRef.id,
-        isEncrypted: true, // TODO: Implement proper encryption before production
+        isEncrypted: true,
         metadata: {},
+        ...(scheduledFor ? { scheduledFor: new Date(scheduledFor) } : {}),
       },
       include: {
         patientRef: true,
       },
     });
 
-    // Create audit log with minimal info for now
+    console.log('Created message:', {
+      id: message.id,
+      status: message.status,
+      scheduledFor: message.scheduledFor,
+      body: message.body
+    });
+
+    // Only send the message now if it's not scheduled
+    if (!scheduledFor) {
+      console.log('Sending message immediately...');
+      const result = await sendSMS(phoneNumber, messageBody);
+
+      if (!result.success) {
+        await appPrisma.message.update({
+          where: { id: message.id },
+          data: { status: 'FAILED' },
+        });
+
+        return NextResponse.json(
+          { error: result.error },
+          { status: 500 }
+        );
+      }
+
+      // Update message with success status and Twilio SID
+      await appPrisma.message.update({
+        where: { id: message.id },
+        data: {
+          status: 'SENT',
+          twilioSid: result.messageId,
+        },
+      });
+    }
+
+    // Create audit log
     await appPrisma.messageAudit.create({
       data: {
         messageId: message.id,
-        action: 'SEND',
-        userId: 'development', // TODO: Add proper user tracking before production
+        action: scheduledFor ? 'SCHEDULE' : 'SEND',
+        userId: 'development',
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
       },

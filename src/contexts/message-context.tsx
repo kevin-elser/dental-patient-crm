@@ -27,8 +27,10 @@ interface MessageThread {
     body: string;
     createdAt: Date;
     direction: "INBOUND" | "OUTBOUND";
+    scheduledFor?: Date;
   };
   patient: Patient;
+  hasScheduledMessages: boolean;
 }
 
 interface MessageContextType {

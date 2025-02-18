@@ -3,6 +3,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "lucide-react";
 
 type Message = {
   id: string;
@@ -12,11 +14,13 @@ type Message = {
   toNumber: string;
   body: string;
   createdAt: Date;
+  scheduledFor?: Date;
 };
 
 interface MessageListProps {
   patientId: string;
   currentUserNumber: string;
+  variant?: "default" | "scheduled";
 }
 
 function MessageSkeleton() {
@@ -33,7 +37,7 @@ function MessageSkeleton() {
   );
 }
 
-export function MessageList({ patientId, currentUserNumber }: MessageListProps) {
+export function MessageList({ patientId, currentUserNumber, variant = "default" }: MessageListProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -51,7 +55,7 @@ export function MessageList({ patientId, currentUserNumber }: MessageListProps) 
 
   const fetchMessages = async (page: number) => {
     try {
-      const response = await fetch(`/api/messages/${patientId}?page=${page}`);
+      const response = await fetch(`/api/messages/${patientId}?page=${page}${variant === "scheduled" ? "&scheduled=true" : ""}`);
       if (!response.ok) throw new Error("Failed to fetch messages");
       const data = await response.json();
       // Reverse the messages so newest are at the bottom
@@ -187,7 +191,9 @@ export function MessageList({ patientId, currentUserNumber }: MessageListProps) 
           <>
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                No messages yet. Start a conversation!
+                {variant === "scheduled" 
+                  ? "No scheduled messages"
+                  : "No messages yet. Start a conversation!"}
               </div>
             ) : (
               <>
@@ -198,19 +204,30 @@ export function MessageList({ patientId, currentUserNumber }: MessageListProps) 
                       message.direction === "OUTBOUND"
                         ? "ml-auto bg-primary text-primary-foreground"
                         : "mr-auto bg-muted"
-                    } max-w-[80%] rounded-lg`}
+                    } max-w-[80%] rounded-lg ${
+                      message.status === 'SCHEDULED' ? 'opacity-75' : ''
+                    }`}
                   >
                     <div className="flex flex-col gap-1">
                       <p className="text-sm">{message.body}</p>
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-xs opacity-70">
-                          {formatDistanceToNow(new Date(message.createdAt), {
-                            addSuffix: true,
-                          })}
+                          {message.status === 'SCHEDULED' ? (
+                            <>
+                              <Calendar className="h-3 w-3 inline-block mr-1" />
+                              Scheduled for {new Date(message.scheduledFor!).toLocaleString()}
+                            </>
+                          ) : (
+                            formatDistanceToNow(new Date(message.createdAt), {
+                              addSuffix: true,
+                            })
+                          )}
                         </span>
-                        <span className="text-xs opacity-70">
-                          {message.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs opacity-70">
+                            {message.status === 'SCHEDULED' ? 'Scheduled' : message.status}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Card>

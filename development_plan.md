@@ -136,6 +136,8 @@ Below is my planned roadmap with milestones:
 
 ### Milestone 6: Calendar Module
 - [ ] Design and implement a 24-hour day-view calendar.
+- [ ] Do the same for the week view.
+- [ ] Do the same for the month view.
 - [ ] Integrate event data fetching and interactivity.
 
 ### Milestone 7: Payment History Module

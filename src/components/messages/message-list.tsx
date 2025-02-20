@@ -229,7 +229,7 @@ export function MessageList({ patientId, currentUserNumber}: MessageListProps) {
           <>
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                "No messages yet. Start a conversation!"
+                No messages yet. Start a conversation!
               </div>
             ) : (
               <>

@@ -1,6 +1,6 @@
 'use client'
 
-import { Phone, User, PenSquare } from "lucide-react";
+import { Phone, User, PenSquare, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MessageList } from "./message-list";
 import { MessageCompose } from "./message-compose";
@@ -10,6 +10,12 @@ import { PatientInitials } from "@/components/patients/patient-initials";
 import { NewMessageModal } from "./new-message-modal";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Patient {
   id: string;
@@ -34,10 +40,15 @@ export function MessageInbox({
 }: MessageInboxProps) {
   const { threads, loading } = useMessages();
   const [newMessageModalOpen, setNewMessageModalOpen] = useState(false);
+  const [showScheduledOnly, setShowScheduledOnly] = useState(false);
 
   if (loading) {
     return null; // Parent component handles loading state
   }
+
+  const filteredThreads = showScheduledOnly 
+    ? threads.filter(thread => thread.hasScheduledMessages)
+    : threads;
 
   return (
     <div className={cn("flex h-screen", className)}>
@@ -47,7 +58,29 @@ export function MessageInbox({
           <h1 className="text-xl font-semibold">
             Inbox  
           </h1>
-
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className={cn(
+                    "h-10 w-10",
+                    showScheduledOnly && "bg-accent"
+                  )}
+                >
+                  <Filter className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  checked={showScheduledOnly}
+                  onCheckedChange={setShowScheduledOnly}
+                >
+                  Scheduled
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -56,10 +89,11 @@ export function MessageInbox({
             >
               <PenSquare className="h-6 w-6" />
             </Button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           <MessageThreads 
-            threads={threads}
+            threads={filteredThreads}
             currentPatientId={patient?.id}
           />
         </div>
